@@ -3,12 +3,12 @@ package KilimanJARo.P2P.user;
 public class User {
     private int id;
     private String username;
-    private Coordinates coordinates;
+    private String passwordHash;
 
-    public User(int id, String username, Coordinates coordinates) {
+    public User(int id, String username, String passwordHash) {
         this.id = id;
         this.username = username;
-        this.coordinates = coordinates;
+        this.passwordHash = passwordHash;
     }
 
     public int getId() {
@@ -19,7 +19,7 @@ public class User {
         return username;
     }
 
-    public Coordinates getCoordinates() {
-        return coordinates;
+    public boolean isCorrectPassword(String hash) {
+        return passwordHash.equals(hash);
     }
 }
