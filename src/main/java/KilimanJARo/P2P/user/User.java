@@ -1,8 +1,8 @@
 package KilimanJARo.P2P.user;
 
 public class User {
-    private int id;
-    private String username;
+    private final int id;
+    private final String username;
     private String passwordHash;
 
     public User(int id, String username, String passwordHash) {
@@ -21,5 +21,9 @@ public class User {
 
     public boolean isCorrectPassword(String hash) {
         return passwordHash.equals(hash);
+    }
+
+    public void setPass(String newPassword) {
+        passwordHash = newPassword;
     }
 }

@@ -1,4 +1,4 @@
-package KilimanJARo.P2P.user;
+package KilimanJARo.P2P.monitors;
 
 import java.util.HashMap;
 import java.util.Map;
