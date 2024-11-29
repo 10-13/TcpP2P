@@ -26,4 +26,13 @@ public class User {
     public void setPass(String newPassword) {
         passwordHash = newPassword;
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", passwordHash='" + passwordHash + '\'' +
+                '}';
+    }
 }

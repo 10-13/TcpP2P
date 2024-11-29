@@ -1,12 +1,15 @@
+/*
 package KilimanJARo.P2P.server.monitors;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+*/
 /*
     * This class is responsible for monitoring user activity and choosing a user to connect to based on recent activity.
- */
+ *//*
+
 public class UserActivityMonitor {
     private static final long RECENT_TIME_THRESHOLD = 48 * 60 * 60 * 1000; // 48 hours
     private Map<String, Long> userActivityMap = new HashMap<>();
@@ -91,4 +94,4 @@ public class UserActivityMonitor {
     public long getLastActivityTime(String userName) {
         return userActivityMap.get(userName);
     }
-}
+}*/
