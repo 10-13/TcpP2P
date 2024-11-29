@@ -27,11 +27,6 @@ public class ClientServerApplication {
     public CreateTunnelResponse makeTube(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
                              @RequestParam String tunnel_id) {
-        if (from == null)
-            from = "local_port";
-        if (to == null)
-            to = "local_port";
-
         var tunnel = Tunnel.Create(from, to);
         if (tunnel == null)
             return new CreateTunnelResponse(false);
