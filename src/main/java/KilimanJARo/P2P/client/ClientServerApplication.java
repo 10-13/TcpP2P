@@ -1,6 +1,7 @@
-/*
 package KilimanJARo.P2P.client;
 
+import KilimanJARo.P2P.client.response.CreateTunnelResponse;
+import KilimanJARo.P2P.client.response.EstablishConnectionResponse;
 import org.springframework.boot.SpringApplication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -19,7 +20,7 @@ public class ClientServerApplication {
     }
 
     @PostMapping("/makeTube")
-    public RequestResponse makeTube(@RequestParam(required = false) String from,
+    public CreateTunnelResponse makeTube(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
                              @RequestParam String tunnel_id) {
         if (from == null) {
@@ -28,38 +29,40 @@ public class ClientServerApplication {
         if (to == null) {
             to = "local_port";
         }
-        String url = "http://server/api/makeTube?from=" + from + "&to=" + to + "&tunnel_id=" + tunnel_id;
-        RequestResponse response = restTemplate.postForObject(url, null, RequestResponse.class);
-        return response != null ? response : new RequestResponse(false,"failure", tunnel_id);
+        // TODO: Add logic for creating tunnels.
+
+        return new CreateTunnelResponse(false);
     }
 
     @PostMapping("/closeTube")
     public void closeTube(@RequestParam String tunnel_id) {
-        String url = "http://server/api/closeTube?tunnel_id=" + tunnel_id;
-        restTemplate.postForObject(url, null, Void.class);
+        // TODO: Add logic for closing tunnel.
     }
 
     @PostMapping("/requestConnection")
-    public RequestResponse requestConnection(@RequestParam String request_user,
-                                                @RequestParam String tunnel_id) {
+    public EstablishConnectionResponse requestConnection(@RequestParam String request_user,
+                                                         @RequestParam String tunnel_id) {
+        // TODO: Redirect to local port.
         String url = "http://server/api/requestConnection?request_user=" + request_user + "&tunnel_id=" + tunnel_id;
-        RequestResponse response = restTemplate.postForObject(url, null, RequestResponse.class);
-        return response != null ? response : new RequestResponse(false, "failure", tunnel_id);
+        EstablishConnectionResponse response = restTemplate.postForObject(url, null, EstablishConnectionResponse.class);
+        return response != null ? response : new EstablishConnectionResponse(false, "failure", tunnel_id);
     }
 
     @PostMapping("/establishConnection")
     public void establishConnection(@RequestParam String tunnel_id,
                                     @RequestParam String local_id,
                                     @RequestParam String endpoint_user) {
+        // TODO: Redirect to local port.
         String url = "http://server/api/establishConnection?tunnel_id=" + tunnel_id + "&local_id=" + local_id + "&endpoint_user=" + endpoint_user;
         restTemplate.postForObject(url, null, Void.class);
     }
 
     @PostMapping("/requestTube")
-    public RequestResponse requestTube(@RequestParam String endpoint_name,
+    public EstablishConnectionResponse requestTube(@RequestParam String endpoint_name,
                                 @RequestParam String local_id) {
+        // TODO: Redirect to server.
         String url = "http://server/api/requestTube?endpoint_name=" + endpoint_name + "&local_id=" + local_id;
-        RequestResponse response = restTemplate.postForObject(url, null, RequestResponse.class);
+        RequestResponse response = restTemplate.postForObjecte(url, null, RequestResponse.class);
         if (response != null && response.isAllowed()) {
             tunnelMap.put(local_id, response.getTunnel_id());
         }
@@ -68,6 +71,7 @@ public class ClientServerApplication {
 
     @PostMapping("/requestCloseTube")
     public void requestCloseTube(@RequestParam String local_id) {
+        // TODO: Redirect to server.
         String tunnel_id = tunnelMap.get(local_id);
         if (tunnel_id != null) {
             String url = "http://server/api/requestCloseTube?local_id=" + local_id + "&tunnel_id=" + tunnel_id;
@@ -75,4 +79,4 @@ public class ClientServerApplication {
             tunnelMap.remove(local_id);
         }
     }
-}*/
+}
