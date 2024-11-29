@@ -1,14 +1,19 @@
 package KilimanJARo.P2P.playground;
 
+import KilimanJARo.P2P.server.requests.RegisterRequest;
+import KilimanJARo.P2P.server.responses.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import java.io.FileWriter;
@@ -40,6 +45,10 @@ class Server2Controller {
     public Server2Controller(@Qualifier("Server2RestTemplate") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
+
+    @Value("${main.server.properties}")
+
+
     @GetMapping("/server2")
     public String server2Endpoint() {
         return "Hello from Server 2";
@@ -68,5 +77,17 @@ class Server2Controller {
             System.err.println("Failed to connect to Server 1: " + e.getMessage());
         }
         return 0;
+    }
+
+    @PostMapping("/registerWithMainServer")
+    public ResponseEntity<RegisterResponse> registerWithMainServer() {
+        RegisterRequest request = new RegisterRequest("Server2", "12345");
+        ResponseEntity<RegisterResponse> response = restTemplate.postForEntity(mainServerUrl + "/api/registerServer", request, ServerRegistrationResponse.class);
+
+        if (response.getBody() != null && response.getBody().isSuccess()) {
+            return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully"));
+        } else {
+            return ResponseEntity.status(500).body(new RegisterResponse(false, "Server registration failed"));
+        }
     }
 }

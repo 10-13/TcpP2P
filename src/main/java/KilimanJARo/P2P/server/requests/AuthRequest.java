@@ -1,14 +1,11 @@
-// RegisterRequest.java
-package KilimanJARo.P2P.requests;
+// AuthRequest.java
+package KilimanJARo.P2P.server.requests;
 
-public class RegisterRequest {
+public class AuthRequest {
     private String name;
     private String password;
 
-    public RegisterRequest() {
-    }
-
-    public RegisterRequest(String name, String password) {
+    public AuthRequest(String name, String password) {
         this.name = name;
         this.password = password;
     }

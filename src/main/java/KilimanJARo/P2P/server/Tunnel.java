@@ -28,7 +28,7 @@ public class Tunnel {
 
     public User getBegpoint() {
         return begpoint;
-    }фф
+    }
 
     public User getEndpoint() {
         return endpoint;
@@ -44,5 +44,6 @@ public class Tunnel {
 
     public boolean deleteTunnel() {
         // TODO: Implement this method
+        return false;
     }
 }

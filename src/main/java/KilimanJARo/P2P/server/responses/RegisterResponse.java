@@ -1,5 +1,5 @@
 
-package KilimanJARo.P2P.responses;
+package KilimanJARo.P2P.server.responses;
 
 public class RegisterResponse {
     private boolean success;

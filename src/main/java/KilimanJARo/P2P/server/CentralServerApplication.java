@@ -1,10 +1,10 @@
 package KilimanJARo.P2P.server;
 
-import KilimanJARo.P2P.monitors.UserConnectionMonitor;
-import KilimanJARo.P2P.requests.AuthRequest;
-import KilimanJARo.P2P.requests.RegisterRequest;
-import KilimanJARo.P2P.responses.AuthResponse;
-import KilimanJARo.P2P.responses.RegisterResponse;
+import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
+import KilimanJARo.P2P.server.requests.AuthRequest;
+import KilimanJARo.P2P.server.requests.RegisterRequest;
+import KilimanJARo.P2P.server.responses.AuthResponse;
+import KilimanJARo.P2P.server.responses.RegisterResponse;
 import KilimanJARo.P2P.user.User;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

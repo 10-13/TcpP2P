@@ -1,5 +1,5 @@
 // src/main/java/KilimanJARo/P2P/monitors/UserConnectionMonitor.java
-package KilimanJARo.P2P.monitors;
+package KilimanJARo.P2P.server.monitors;
 
 import java.time.Instant;
 import java.util.Map;

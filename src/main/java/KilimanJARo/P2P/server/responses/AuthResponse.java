@@ -1,5 +1,5 @@
 // AuthResponse.java
-package KilimanJARo.P2P.responses;
+package KilimanJARo.P2P.server.responses;
 
 public class AuthResponse {
     private boolean success;
