@@ -1,7 +1,10 @@
 // src/main/java/KilimanJARo/P2P/monitors/UserConnectionMonitor.java
 package KilimanJARo.P2P.server.monitors;
 
+import KilimanJARo.P2P.user.User;
+
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class UserConnectionMonitor {
     private final Map<String, Instant> userConnections = new ConcurrentHashMap<>();
+    private final ArrayList<String> onlineUsers = new ArrayList<>();
     private int userCount = 0;
     private int onlineUserCount = 0;
     private static UserConnectionMonitor instance;
@@ -27,11 +31,16 @@ public class UserConnectionMonitor {
     public void userConnected(String username) {
         onlineUserCount++;
         userConnections.put(username, Instant.now());
+        onlineUsers.add(username);
     }
 
     public void userDisconnected(String username) {
         onlineUserCount--;
-        userConnections.remove(username);
+        onlineUsers.remove(username);
+    }
+
+    public ArrayList<String> getOnlineUsers() {
+        return onlineUsers;
     }
 
     public Instant getLastOnlineTime(String username) {
