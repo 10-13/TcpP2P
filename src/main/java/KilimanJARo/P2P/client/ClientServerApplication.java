@@ -29,7 +29,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 @SpringBootApplication
 @EnableScheduling
@@ -37,10 +39,7 @@ public class ClientServerApplication {
 
     public static void main(String[] args) {
         if (args != null) {
-            String[] customArgs = new String[]{"--spring.config.name=ClientServerApplication", "--spring.profiles.active=client_server"};
-            String[] allArgs = new String[args.length + customArgs.length];
-            System.arraycopy(args, 0, allArgs, 0, args.length);
-            System.arraycopy(customArgs, 0, allArgs, args.length, customArgs.length);
+            String[] allArgs = Stream.concat(Arrays.stream(args), Stream.of("--spring.config.name=ClientServerApplication", "--spring.profiles.active=client_server")) .toArray(String[]::new);
             SpringApplication.run(ClientServerApplication.class, allArgs);
         } else {
             SpringApplication.run(ClientServerApplication.class, "--spring.config.name=ClientServerApplication", "--spring.profiles.active=client_server");
