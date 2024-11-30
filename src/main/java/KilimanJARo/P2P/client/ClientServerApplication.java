@@ -29,6 +29,8 @@ public class ClientServerApplication {
     public CreateTunnelResponse makeTube(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
                              @RequestParam String tunnel_id) {
+        // TODO: Now for null 'from' needs to send request to front for creating local port.
+        //       If front returns incorrect port|failed to establish connection return errors.
         var tunnel = Tunnel.Create(from, to);
         if (tunnel == null)
             return new CreateTunnelResponse(false);
