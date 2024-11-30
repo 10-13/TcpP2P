@@ -62,7 +62,7 @@ public class CentralServerController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> auth(@RequestBody AuthRequest request) {
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         User user = users.get(request.getName());
         if (user != null && user.isCorrectPassword(hashPassword(request.getPassword()))) {
             String newPassword = generateRandomPassword();
@@ -88,6 +88,10 @@ public class CentralServerController {
         }
     }
 
+    /**
+     * This method is for test purposes only and will be removed later.
+     */
+    @Deprecated
     @GetMapping("/users")
     public String getUsers() {
         StringBuilder usersList = new StringBuilder();
@@ -97,6 +101,10 @@ public class CentralServerController {
         return usersList.toString();
     }
 
+    /**
+     * This method is for test purposes only and will be removed later.
+     */
+    @Deprecated
     @GetMapping("/online_users")
     public String getOnlineUsers() {
         StringBuilder onlineUsersList = new StringBuilder();

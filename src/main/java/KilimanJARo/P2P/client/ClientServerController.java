@@ -35,7 +35,13 @@ public class ClientServerController {
     private final Properties central_properties;
     private final Properties properties;
     private final PropertiesFactoryBean mainServerProperties;
+
+    /**
+     * This field is for test purposes only and will be removed later and moved to front.
+     */
+    @Deprecated
     private String password;
+
     private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
     private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
 
