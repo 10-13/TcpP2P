@@ -49,13 +49,15 @@
        [Client->FrontS] (noden): RequestConnection(request_user, tunnel_id) -> (is_allowed, reason, tunnel_id)
 In case of allowed connection:
 [Server]: Building tunnel structure
-[Server->Client]: MakeTube(null, node1, tunnel_id) -> (is_completed)
-[Server->Client] (node1): MakeTube(node0, node2, tunnel_id) -> (is_completed)
-[Server->Client] (node2): MakeTube(node1, node3, tunnel_id) -> (is_completed)
+[Server->Client]: MakeTube(null, node1, tunnel_id) -> (is_completed, port)
+[Server->Client] (node1): MakeTube(node0, node2, tunnel_id) -> (is_completed, port)
+[Server->Client] (node2): MakeTube(node1, node3, tunnel_id) -> (is_completed, port)
 Same for each node of tunnel.
-[Server->Client] (noden): MakeTube(noden-1, null, tunnel_id) -> (is_completed)
+[Server->Client] (noden): MakeTube(noden-1, null, tunnel_id) -> (is_completed, null)
 [Server->Client]: EstablishConnection(tunnel_id, local_id, endpoint_user)
 [Client->FrontS]: EstablishConnection(local_id, local_port)
 [Server->Client] (noden): EstablishConnection(tunnel_id, local_id, begpoint_user)
 [Client->FrontS] (noden): EstablishConnection(local_id, local_port)
 ```
+
+- Важно обратить внимание на то, что вызовы MakeTube имеют строгий порядок, чтобы гарантировать существование открытого порта на предыдущем узле.
