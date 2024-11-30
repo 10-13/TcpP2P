@@ -64,6 +64,8 @@ class Server2Controller {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final String mainServerUrl;
     private String password;
+    // TODO: интеграционные тесты
+    // TODO: макиты
 
     @Autowired
     public Server2Controller(RestTemplate restTemplate, PropertiesFactoryBean mainServerProperties) throws IOException {
@@ -105,7 +107,7 @@ class Server2Controller {
     //         System.err.println("Failed to tconnect to Server 1: " + e.getMessage());
     //     }
     //     return 0;
-    // }s
+    // }
 
     @GetMapping("/registerWithMainServer")
     public ResponseEntity<RegisterResponse> registerWithMainServer() {
