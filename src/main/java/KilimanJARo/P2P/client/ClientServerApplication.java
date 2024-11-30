@@ -1,91 +1,76 @@
 package KilimanJARo.P2P.client;
 
-import KilimanJARo.P2P.client.response.CreateTunnelResponse;
-import KilimanJARo.P2P.client.response.EstablishConnectionResponse;
-import KilimanJARo.P2P.client.tunneling.Tunnel;
+import KilimanJARo.P2P.server.requests.AuthRequest;
+import KilimanJARo.P2P.server.requests.LogoutRequest;
+import KilimanJARo.P2P.server.requests.RegisterRequest;
+import KilimanJARo.P2P.server.responses.AuthResponse;
+import KilimanJARo.P2P.server.responses.LogoutResponse;
+import KilimanJARo.P2P.server.responses.RegisterResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.support.HttpRequestWrapper;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Properties;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@RestController
-@RequestMapping("/api")
+@SpringBootApplication
+@EnableScheduling
 public class ClientServerApplication {
-    private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
-    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
-    private final RestTemplate restTemplate = new RestTemplate();
-    
-    public final int FrontPort = 8080;
-
 
     public static void main(String[] args) {
-        SpringApplication.run(ClientServerApplication.class, args);
-    }
-
-
-    @PostMapping("/makeTube")
-    public CreateTunnelResponse makeTube(@RequestParam(required = false) String from,
-                             @RequestParam(required = false) String to,
-                             @RequestParam String tunnel_id) {
-        // TODO: Now for null 'from' needs to send request to front for creating local port.
-        //       If front returns incorrect port|failed to establish connection return errors.
-        var tunnel = Tunnel.Create(from, to);
-        if (tunnel == null)
-            return new CreateTunnelResponse(false);
-        publicIDToLocalTunnels.put(tunnel_id, tunnel);
-        return new CreateTunnelResponse(true);
-    }
-    @PostMapping("/closeTube")
-    public void closeTube(@RequestParam String tunnel_id) {
-        publicIDToLocalTunnels.get(tunnel_id).Close();
-    }
-
-
-    @PostMapping("/requestConnection")
-    public EstablishConnectionResponse requestConnection(@RequestParam String request_user,
-                                                         @RequestParam String tunnel_id) {
-        String url = "http://localhost:" + FrontPort + "/requestConnection?" +
-                "request_user=" + request_user +
-                "&tunnel_id=" + tunnel_id;
-        EstablishConnectionResponse response = restTemplate.postForObject(url, null, EstablishConnectionResponse.class);
-        if (response != null)
-            return response;
-        return new EstablishConnectionResponse(false, "failure", tunnel_id);
-    }
-    @PostMapping("/establishConnection")
-    public void establishConnection(@RequestParam String tunnel_id,
-                                    @RequestParam String local_id,
-                                    @RequestParam String endpoint_user) {
-        String url = "http://localhost:" + FrontPort + "/requestConnection?" +
-                "request_user=" + endpoint_user +
-                "&tunnel_id=" + tunnel_id +
-                "&local_id=" + local_id +
-                "&port=" + publicIDToLocalTunnels.get(tunnel_id).Port();
-        restTemplate.postForObject(url, null, Void.class);
-    }
-
-
-    @PostMapping("/requestTube")
-    public EstablishConnectionResponse requestTube(@RequestParam String endpoint_name,
-                                @RequestParam String local_id) {
-        String url = "http://server/api/requestTube?endpoint_name=" + endpoint_name + "&local_id=" + local_id;
-        EstablishConnectionResponse response = restTemplate.postForObject(url, null, EstablishConnectionResponse.class);
-        if (response == null)
-            return new EstablishConnectionResponse(false, "failure", local_id);
-        if (response.isAllowed()) {
-            localToPublicIDTubeMap.put(local_id, response.tunnelId());
+        if (args != null) {
+            String[] customArgs = new String[]{"--spring.config.name=ClientServerApplication", "--spring.profiles.active=client_server"};
+            String[] allArgs = new String[args.length + customArgs.length];
+            System.arraycopy(args, 0, allArgs, 0, args.length);
+            System.arraycopy(customArgs, 0, allArgs, args.length, customArgs.length);
+            SpringApplication.run(ClientServerApplication.class, allArgs);
+        } else {
+            SpringApplication.run(ClientServerApplication.class, "--spring.config.name=ClientServerApplication", "--spring.profiles.active=client_server");
         }
-        return new EstablishConnectionResponse(response.isAllowed(), response.reason(), local_id);
+
     }
-    @PostMapping("/requestCloseTube")
-    public void requestCloseTube(@RequestParam String local_id) {
-        String tunnel_id = localToPublicIDTubeMap.get(local_id);
-        if (tunnel_id != null) {
-            String url = "http://server/api/requestCloseTube?local_id=" + local_id + "&tunnel_id=" + tunnel_id;
-            restTemplate.postForObject(url, null, Void.class);
-            localToPublicIDTubeMap.remove(local_id);
-        }
+
+    @Bean(name="ClientServerRestTemplate")
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Value("${central_server_properties}")
+    private String centralServerPropertiesPath;
+
+    @Bean(name = "centralServerProperties")
+    public PropertiesFactoryBean centralServerProperties() {
+        PropertiesFactoryBean bean = new PropertiesFactoryBean();
+        bean.setLocation(new ClassPathResource(centralServerPropertiesPath));
+        return bean;
+    }
+
+    @Value("${spring.config.name}")
+    private String serverPropertiesPath;
+
+
+    @Bean(name = "serverProperties")
+    public PropertiesFactoryBean serverProperties() {
+        PropertiesFactoryBean bean = new PropertiesFactoryBean();
+        bean.setLocation(new ClassPathResource(serverPropertiesPath));
+        return bean;
     }
 }
