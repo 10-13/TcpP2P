@@ -8,6 +8,12 @@
     - Ответ (is_allowed, reason, tunnel_id)
   - Запрос на финализацию установки соединения EstablishConnection(tunnel_id, local_id, endpoint_user) [Перенаправляется на фронт, обогащаясь портом, на который развернут туннель]
     - NO RESPONSE
+  - Запрос на регистрацию RegisterWithMainServer()
+    - Ответ (is_success, message, password)
+  - Запрос на аутентификацию AuthWithMainServer(password)
+    - Ответ (is_success, message, next_password)
+  - Запрос на выход LogoutFromMainServer()
+    - Ответ (is_success, message)
 
 - Обработка запросов от локального пользователя
   - Запрос на создание тонеля RequestTube(endpoint_name, local_id) [Перенаправляется на сервер]
