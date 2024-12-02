@@ -128,8 +128,18 @@ public class ClientServerController {
     public ResponseEntity<CreateTunnelResponse> makeTube(@RequestParam(required = false) String from,
                                                          @RequestParam(required = false) String to,
                                                          @RequestParam String tunnel_id) {
-        // TODO: Now for null 'from' needs to send request to front for creating local port.
-        //       If front returns incorrect port|failed to establish connection return errors.
+        if (from == null) {
+            from = properties.getProperty("front.port");
+            if (from == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
+            }
+        }
+        if (to == null) {
+            to = properties.getProperty("front.port");
+            if (to == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
+            }
+        }
         var tunnel = Tunnel.Create(from, to);
         if (tunnel == null)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
