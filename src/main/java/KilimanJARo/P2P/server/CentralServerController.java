@@ -11,9 +11,11 @@ import KilimanJARo.P2P.user.User;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -23,7 +25,6 @@ import java.util.logging.SimpleFormatter;
 
 @RestController
 @RequestMapping("/api")
-@Profile("central_server")
 @CrossOrigin
 public class CentralServerController {
     private final Map<Integer, Tunnel> tunnels = new HashMap<>();
@@ -112,6 +113,16 @@ public class CentralServerController {
             onlineUsersList.append(username).append("\n");
         }
         return onlineUsersList.toString();
+    }
+
+    @Deprecated
+    public ArrayList<User> getUsersList() {
+        return new ArrayList<>(users.values());
+    }
+
+    @Deprecated
+    public ArrayList<String> getOnlineUsersList() {
+        return userConnectionMonitor.getOnlineUsers();
     }
 
     private String generateRandomPassword() {

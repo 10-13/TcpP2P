@@ -29,10 +29,10 @@ import java.util.logging.SimpleFormatter;
 @SpringBootApplication
 public class CentralServerApplication {
     public static void main(String[] args) {
-        SpringApplication.run(CentralServerApplication.class, "--spring.config.name=central_server", "--spring.profiles.active=central_server");
+        SpringApplication.run(CentralServerApplication.class, "--spring.config.name=central_server");
     }
 
-    @Bean
+    @Bean(name="centralSecurityChain")
     public SecurityFilterChain securityFilterChainMain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authz -> authz

@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -32,9 +33,8 @@ import java.util.Properties;
 @RequestMapping("/api")
 public class ClientServerController {
     private final RestTemplate restTemplate;
-    private final Properties central_properties;
-    private final Properties properties;
-    private final PropertiesFactoryBean mainServerProperties;
+    private final SmartProperties central_properties;
+    private final SmartProperties properties;
 
     /**
      * This field is for test purposes only and will be removed later and moved to front.
@@ -46,18 +46,10 @@ public class ClientServerController {
     private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
 
     @Autowired
-    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, PropertiesFactoryBean centralServerProperties, PropertiesFactoryBean serverProperties, PropertiesFactoryBean mainServerProperties) throws IOException {
+    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("centralServerProperties") PropertiesFactoryBean centralServerProperties, @Qualifier("serverProperties") PropertiesFactoryBean serverProperties) throws IOException {
         this.restTemplate = restTemplate;
-        this.central_properties = centralServerProperties.getObject();
-        if (central_properties == null) {
-            throw new IOException("Failed to load central properties.");
-        }
-
-        this.properties = serverProperties.getObject();
-        if (properties == null) {
-            throw new IOException("Failed to load properties.");
-        }
-        this.mainServerProperties = mainServerProperties;
+        this.central_properties = new SmartProperties(centralServerProperties.getObject());
+        this.properties = new SmartProperties(serverProperties.getObject());
     }
 
     @GetMapping("/registerWithMainServer")
@@ -67,10 +59,10 @@ public class ClientServerController {
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
         RequestEntity<RegisterRequest> requestEntity =
-            RequestEntity.post(URI.create(central_properties.getProperty("server.url.apu.register")))
+            RequestEntity.post(URI.create(central_properties.getProperty("server.api.register.url")))
             .headers(headers)
             .body(request);
-
+        System.out.println(central_properties.getProperty("server.api.register.url"));
         ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
         password = response.getBody().getPassword();
 
@@ -89,7 +81,29 @@ public class ClientServerController {
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<AuthRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.url.api.login")))
+                .post(URI.create(central_properties.getProperty("server.api.login.url")))
+                .headers(headers)
+                .body(request);
+
+        ResponseEntity<AuthResponse> response = restTemplate.exchange(requestEntity, AuthResponse.class);
+        password = response.getBody().getNextPassword();
+
+        if (response.getBody() != null && response.getBody().isSuccess()) {
+            return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().getNextPassword()));
+        } else {
+            return ResponseEntity.status(500).body(new AuthResponse(false, "Server authentication failed", null));
+        }
+    }
+
+    @GetMapping("/authWithMainServerAuto")
+    public ResponseEntity<AuthResponse> authWithMainServerAuto() {
+        AuthRequest request = new AuthRequest("ClientServer", password);
+        HttpHeaders headers = new HttpHeaders();
+        // headers.setBasicAuth("username", "password");
+        // headers.set("Content-Type", "application/json");
+
+        RequestEntity<AuthRequest> requestEntity = RequestEntity
+                .post(URI.create(central_properties.getProperty("server.api.login.url")))
                 .headers(headers)
                 .body(request);
 
@@ -111,7 +125,7 @@ public class ClientServerController {
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<LogoutRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.url.api.logout")))
+                .post(URI.create(central_properties.getProperty("server.api.logout.url")))
                 .headers(headers)
                 .body(request);
 
