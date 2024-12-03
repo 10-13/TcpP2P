@@ -43,7 +43,7 @@ public class ClientServerApplication {
 
     public static void main(String[] args) {
         if (args != null) {
-            String[] allArgs = Stream.concat(Arrays.stream(args), Stream.of("--spring.config.name=client_server")) .toArray(String[]::new);
+            String[] allArgs = Stream.concat(Arrays.stream(args), Stream.of("--spring.config.name=client_server")).toArray(String[]::new);
             SpringApplication.run(ClientServerApplication.class, allArgs);
         } else {
             SpringApplication.run(ClientServerApplication.class, "--spring.config.name=client_server");
