@@ -27,7 +27,7 @@ public class Tunnel {
      */
     public static Tunnel Create(String from, String to, String localId) {
         Tunnel tunnel = new Tunnel(localId);
-        if (!tunnel.initialize(tunnel, from, to)) {
+        if (!tunnel.initialize(from, to)) {
             return null;
         }
         return tunnel;
@@ -39,18 +39,18 @@ public class Tunnel {
      *
      * @return true if initialization is successful, otherwise false.
      */
-    private boolean initialize(Tunnel tunnel, String from, String to) {
+    private boolean initialize(String from, String to) {
         try {
             if (from != null) {
                 String[] fromParts = from.split(":");
-                tunnel.clientSocket = new Socket(fromParts[0], Integer.parseInt(fromParts[1]));
-                tunnel.clientSocket.setSoTimeout(TIMEOUT);
+                clientSocket = new Socket(fromParts[0], Integer.parseInt(fromParts[1]));
+                clientSocket.setSoTimeout(TIMEOUT);
             }
             if (to != null) {
-                tunnel.serverSocket = new ServerSocket(0); // If port is 0 then it will find free port
-                tunnel.serverSocket.setSoTimeout(TIMEOUT);
+                serverSocket = new ServerSocket(0); // If port is 0 then it will find free port
+                serverSocket.setSoTimeout(TIMEOUT);
 
-                tunnel.executorService.submit(() -> tunnel.waitForConnection(to));
+                executorService.submit(() -> waitForConnection(to));
             }
             return true;
         } catch (IOException e) {
@@ -123,14 +123,14 @@ public class Tunnel {
     /**
      * @return Returns port for connection to "from"
      */
-    public int PortToFrom() {
+    public int PortToPrev() {
         return clientSocket != null ? clientSocket.getLocalPort() : -1;
     }
 
     /**
      * @return Returns port for connection to "to"
      */
-    public int PortToTo() {
+    public int PortToNext() {
         return serverSocket != null ? serverSocket.getLocalPort() : -1;
 }
 
