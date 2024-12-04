@@ -1,3 +1,3 @@
 package KilimanJARo.P2P.client.response;
 
-public record EstablishConnectionResponse(boolean isAllowed, String reason, String tunnelId) {}
+public record EstablishConnectionResponse(boolean isAllowed, String reason) {}

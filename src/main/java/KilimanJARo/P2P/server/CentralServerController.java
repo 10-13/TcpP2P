@@ -1,5 +1,6 @@
 package KilimanJARo.P2P.server;
 
+import KilimanJARo.P2P.client.tunneling.Tunnel;
 import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
 import KilimanJARo.P2P.server.requests.AuthRequest;
 import KilimanJARo.P2P.server.requests.LogoutRequest;
@@ -45,8 +46,8 @@ public class CentralServerController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-        if (users.values().stream().anyMatch(user -> user.getUsername().equals(request.getName()))) {
-            logger.info("Registration failed: User already exists - " + request.getName());
+        if (users.values().stream().anyMatch(user -> user.getUsername().equals(request.name()))) {
+            logger.info("Registration failed: User already exists - " + request.name());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new RegisterResponse(false, "User already exists", null));
         }
         int userId;
@@ -56,30 +57,30 @@ public class CentralServerController {
 
         String password = generateRandomPassword();
         String passwordHash = hashPassword(password);
-        User newUser = new User(userId, request.getName(), passwordHash);
+        User newUser = new User(userId, request.name(), passwordHash);
         users.put(newUser.getUsername(), newUser);
-        logger.info("User registered successfully: " + request.getName() + " " + password + "\n");
+        logger.info("User registered successfully: " + request.name() + " " + password + "\n");
         return ResponseEntity.ok(new RegisterResponse(true, "User registered successfully", password));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        User user = users.get(request.getName());
-        if (user != null && user.isCorrectPassword(hashPassword(request.getPassword()))) {
+        User user = users.get(request.name());
+        if (user != null && user.isCorrectPassword(hashPassword(request.password()))) {
             String newPassword = generateRandomPassword();
             user.setPass(newPassword);
-            userConnectionMonitor.userConnected(request.getName());
-            logger.info("User authenticated successfully: " + request.getName() + " " + newPassword + "\n");
+            userConnectionMonitor.userConnected(request.name());
+            logger.info("User authenticated successfully: " + request.name() + " " + newPassword + "\n");
             return ResponseEntity.ok(new AuthResponse(true, "User authenticated", newPassword));
         }
-        logger.info("Authentication failed: Invalid credentials - " + request.getName());
+        logger.info("Authentication failed: Invalid credentials - " + request.name());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(false, "Authentication failed", null));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
-        String username = request.getUsername();
-        if (userConnectionMonitor.isUserConnected(request.getUsername())) {
+        String username = request.username();
+        if (userConnectionMonitor.isUserConnected(username)) {
             userConnectionMonitor.userDisconnected(username);
             logger.info("User logged out successfully: " + username + "\n");
             return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));

@@ -1,12 +1,8 @@
 package KilimanJARo.P2P.client;
 
-import KilimanJARo.P2P.client.request.EstablishConnectionRequest;
-import KilimanJARo.P2P.client.response.CreateTunnelResponse;
-import KilimanJARo.P2P.client.response.EstablishConnectionResponse;
-import KilimanJARo.P2P.client.tunneling.ReadableTunnel;
+import KilimanJARo.P2P.client.request.*;
+import KilimanJARo.P2P.client.response.*;
 import KilimanJARo.P2P.client.tunneling.Tunnel;
-import KilimanJARo.P2P.client.tunneling.TunnelInterface;
-import KilimanJARo.P2P.client.tunneling.UnreadableTunnel;
 import KilimanJARo.P2P.server.requests.AuthRequest;
 import KilimanJARo.P2P.server.requests.LogoutRequest;
 import KilimanJARo.P2P.server.requests.RegisterRequest;
@@ -16,10 +12,7 @@ import KilimanJARo.P2P.server.responses.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -45,42 +38,43 @@ public class ClientServerController {
     private String password;
 
     private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
-    private final Map<String, TunnelInterface> publicIDToLocalTunnels = new HashMap<>();
+    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
 
     @Autowired
     public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("centralServerProperties") PropertiesFactoryBean centralServerProperties, @Qualifier("serverProperties") PropertiesFactoryBean serverProperties) throws IOException {
         this.restTemplate = restTemplate;
         this.central_properties = new SmartProperties(centralServerProperties.getObject());
         this.properties = new SmartProperties(serverProperties.getObject());
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter your name: ");
-        username = scanner.nextLine();
-        registerWithMainServer();
     }
 
     @GetMapping("/registerWithMainServer")
-    public ResponseEntity<RegisterResponse> registerWithMainServer() {
-        RegisterRequest request = new RegisterRequest(username);
+    public ResponseEntity<RegisterResponse> registerWithMainServer(@RequestParam RegisterRequest request) {
+        username = request.name();
+        RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
         RequestEntity<RegisterRequest> requestEntity =
             RequestEntity.post(URI.create(central_properties.getProperty("server.api.register.url")))
             .headers(headers)
-            .body(request);
+            .body(requestToCentral);
         ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
-        password = response.getBody().getPassword();
+        password = response.getBody().password();
 
         if (response.getBody() != null && response.getBody().isSuccess()) {
-            return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully", response.getBody().getPassword()));
+            return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully", response.getBody().password()));
         } else {
             return ResponseEntity.status(500).body(new RegisterResponse(false, "Server registration failed", null));
         }
     }
 
     @GetMapping("/authWithMainServer")
-    public ResponseEntity<AuthResponse> authWithMainServer(@RequestParam String password) {
-        AuthRequest request = new AuthRequest(username, password);
+    public ResponseEntity<AuthResponse> authWithMainServer(@RequestParam AuthRequest request) {
+        String usernameIn = request.name();
+        if (!usernameIn.equals(username)) {
+            return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
+        }
+        AuthRequest requestToCentral = new AuthRequest(username, password);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -88,13 +82,13 @@ public class ClientServerController {
         RequestEntity<AuthRequest> requestEntity = RequestEntity
                 .post(URI.create(central_properties.getProperty("server.api.login.url")))
                 .headers(headers)
-                .body(request);
+                .body(requestToCentral);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(requestEntity, AuthResponse.class);
-        password = response.getBody().getNextPassword();
+        password = response.getBody().nextPassword();
 
-        if (response.getBody() != null && response.getBody().isSuccess()) {
-            return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().getNextPassword()));
+        if (response.getBody() != null && response.getBody().success()) {
+            return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().nextPassword()));
         } else {
             return ResponseEntity.status(500).body(new AuthResponse(false, "Server authentication failed", null));
         }
@@ -114,18 +108,22 @@ public class ClientServerController {
                 .body(request);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(requestEntity, AuthResponse.class);
-        password = response.getBody().getNextPassword();
+        password = response.getBody().nextPassword();
 
-        if (response.getBody() != null && response.getBody().isSuccess()) {
-            return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().getNextPassword()));
+        if (response.getBody() != null && response.getBody().success()) {
+            return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().nextPassword()));
         } else {
             return ResponseEntity.status(500).body(new AuthResponse(false, "Server authentication failed", null));
         }
     }
 
     @GetMapping("/logoutFromMainServer")
-    public ResponseEntity<LogoutResponse> logoutFromMainServer() {
-        LogoutRequest request = new LogoutRequest(username);
+    public ResponseEntity<LogoutResponse> logoutFromMainServer(@RequestParam LogoutRequest request) {
+        String usernameIn = request.username();
+        if (!usernameIn.equals(username)) {
+            return ResponseEntity.status(403).body(new LogoutResponse(false, "Logout failed due to invalid credentials"));
+        }
+        LogoutRequest requestToCentral = new LogoutRequest(username);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -133,7 +131,7 @@ public class ClientServerController {
         RequestEntity<LogoutRequest> requestEntity = RequestEntity
                 .post(URI.create(central_properties.getProperty("server.api.logout.url")))
                 .headers(headers)
-                .body(request);
+                .body(requestToCentral);
 
         ResponseEntity<LogoutResponse> response = restTemplate.exchange(requestEntity, LogoutResponse.class);
 
@@ -145,9 +143,10 @@ public class ClientServerController {
     }
 
     @PostMapping("/makeTube")
-    public ResponseEntity<CreateTunnelResponse> makeTube(@RequestParam(required = false) String from,
-                                                         @RequestParam(required = false) String to,
-                                                         @RequestParam String tunnel_id) {
+    public ResponseEntity<CreateTunnelResponse> makeTube(@RequestParam CreateTunnelRequest request) {
+        String from = request.from();
+        String to = request.to();
+        String tunnel_id = request.tunnelId();
         boolean readable = false;
         if (from == null && to == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
@@ -166,83 +165,80 @@ public class ClientServerController {
             }
             readable = true;
         }
-        TunnelInterface tunnel;
-        String local_id = generateLocalId();
-        if (readable) {
-            tunnel = new ReadableTunnel(from, to, username, local_id);
-        } else {
-            tunnel = new UnreadableTunnel(from, to, username, local_id);
-        }
-        if (!tunnel.initialize()) {
+        Tunnel tunnel = Tunnel.Create(from, to, tunnel_id);
+        if (tunnel == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
         }
 
-        localToPublicIDTubeMap.put(local_id, tunnel_id);
         publicIDToLocalTunnels.put(tunnel_id, tunnel);
         return ResponseEntity.ok(new CreateTunnelResponse(true));
     }
 
     @PostMapping("/closeTube")
-    public void closeTube(@RequestParam String tunnel_id) {
-        localToPublicIDTubeMap.remove(publicIDToLocalTunnels.get(tunnel_id).getLocalId());
-        publicIDToLocalTunnels.get(tunnel_id).close();
-        publicIDToLocalTunnels.remove(tunnel_id);
+    public ResponseEntity<CloseTunnelResponse> closeTube(@RequestParam CloseTunnelRequest request) {
+        try {
+            String tunnel_id = request.tunnelId();
+            publicIDToLocalTunnels.get(tunnel_id).close();
+            publicIDToLocalTunnels.remove(tunnel_id);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CloseTunnelResponse(false, e.getMessage()));
+        }
+        return ResponseEntity.ok(new CloseTunnelResponse(true, "Tunnel closed successfully"));
     }
 
+    @PostMapping("/requestConnectionIn")
+    public ResponseEntity<EstablishConnectionResponse> requestConnectionIn(@RequestParam EstablishConnectionRequest request) {
+        ResponseEntity<EstablishConnectionResponse> response = restTemplate.postForEntity(properties.getProperty("front.api.handleConnectionRequest.url"), request, EstablishConnectionResponse.class);
 
-    @PostMapping("/requestConnection")
-    public ResponseEntity<EstablishConnectionResponse> requestConnection(@RequestParam String request_user) {
-        EstablishConnectionRequest request = new EstablishConnectionRequest(username, request_user);
+        if (response.getBody() != null && response.getBody().isAllowed()) {
+            return ResponseEntity.ok(new EstablishConnectionResponse(true, "Connection allowed"));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new EstablishConnectionResponse(false, "Connection denied"));
+        }
+    }
+
+    @PostMapping("/establishConnection")
+    public void establishedConnection(@RequestBody ConnectionEstablishedRequest request) {
+        String url = properties.getProperty("front.api.connectionEstablished.url");
+        restTemplate.postForEntity(url, request, Void.class);
+    }
+
+    @PostMapping("/requestConnectionOut")
+    public ResponseEntity<EstablishConnectionResponse> requestConnectionOut(@RequestParam EstablishConnectionRequest request) {
+        EstablishConnectionRequest requestToCentral = new EstablishConnectionRequest(username, request.to());
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
         RequestEntity<EstablishConnectionRequest> requestEntity =
-                RequestEntity.post(URI.create(central_properties.getProperty("server.api.connectionRequested.url")))
+                RequestEntity.post(URI.create(central_properties.getProperty("server.api.requestConnection.url")))
                         .headers(headers)
-                        .body(request);
+                        .body(requestToCentral);
         ResponseEntity<EstablishConnectionResponse> response = restTemplate.exchange(requestEntity, EstablishConnectionResponse.class);
         if (response.getBody() != null && response.getBody().isAllowed()) {
-            String local_id = generateLocalId();
-            localToPublicIDTubeMap.put(local_id, response.getBody().tunnelId());
             return ResponseEntity.ok(response.getBody());
         }
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new EstablishConnectionResponse(false, "failure", null));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new EstablishConnectionResponse(false, "failure"));
     }
-
-    /*@PostMapping("/establishConnection")
-    public void establishConnection(@RequestParam String tunnel_id,
-                                    @RequestParam String local_id,
-                                    @RequestParam String endpoint_user) {
-        String url = "http://localhost:" + properties.getProperty("front.port") + "/requestConnection?" +
-                "request_user=" + endpoint_user +
-                "&tunnel_id=" + tunnel_id +
-                "&local_id=" + local_id +
-                "&port=" + publicIDToLocalTunnels.get(tunnel_id).Port();
-        restTemplate.postForEntity(url, null, Void.class);
-    }
-
-    @PostMapping("/requestTube")
-    public ResponseEntity<EstablishConnectionResponse> requestTube(@RequestParam String endpoint_name,
-                                @RequestParam String local_id) {
-        String url = "http://server/api/requestTube?endpoint_name=" + endpoint_name + "&local_id=" + local_id;
-        ResponseEntity<EstablishConnectionResponse> response = restTemplate.postForEntity(url, null, EstablishConnectionResponse.class);
-        if (response.getBody().isAllowed()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new EstablishConnectionResponse(false, "failure", local_id));
-        }
-        if (response.getBody().isAllowed()) {
-            localToPublicIDTubeMap.put(local_id, response.getBody().tunnelId());
-        }
-        return ResponseEntity.ok(new EstablishConnectionResponse(response.getBody().isAllowed(), response.getBody().reason(), local_id));
-    }*/
 
     @PostMapping("/requestCloseTube")
-    public void requestCloseTube(@RequestParam String local_id) {
-        String tunnel_id = localToPublicIDTubeMap.get(local_id);
-        if (tunnel_id != null) {
-            String url = properties.getProperty("server.api.requestCloseTube.url") + "&tunnel_id=" + tunnel_id;
-            // String url = "http://server/api/requestCloseTube?local_id=" + local_id + "&tunnel_id=" + tunnel_id;
-            restTemplate.postForEntity(url, null, Void.class);
-            closeTube(tunnel_id);
+    public ResponseEntity<CloseConnectionResponse> requestCloseTube(@RequestParam CloseConnectionRequest request) {
+        String usernameIn = request.username();
+        CloseConnectionRequest requestToCentral = new CloseConnectionRequest(usernameIn);
+        HttpHeaders headers = new HttpHeaders();
+        // headers.setBasicAuth("username", "password");
+        // headers.set("Content-Type", "application/json");
+
+        RequestEntity<CloseConnectionRequest> requestEntity = RequestEntity
+                .post(URI.create(central_properties.getProperty("server.api.closeConnection.url")))
+                .headers(headers)
+                .body(requestToCentral);
+
+        ResponseEntity<CloseConnectionResponse> response = restTemplate.exchange(requestEntity, CloseConnectionResponse.class);
+
+        if (response.getBody() != null && response.getBody().isSuccess()) {
+            return ResponseEntity.ok(new CloseConnectionResponse(true));
+        } else {
+            return ResponseEntity.status(500).body(new CloseConnectionResponse(false));
         }
     }
 
@@ -254,7 +250,7 @@ public class ClientServerController {
         return local_id;
     }
 
-    private class RandomStringGenerator {
+    private static class RandomStringGenerator {
         private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         private static final SecureRandom RANDOM = new SecureRandom();
 
