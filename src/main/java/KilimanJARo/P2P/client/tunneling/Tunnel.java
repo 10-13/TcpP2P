@@ -69,7 +69,6 @@ public class Tunnel {
             try {
                 Socket incomingSocket = serverSocket.accept();
                 if (incomingSocket.getInetAddress().getHostAddress().equals(to.split(":")[0])) {
-                    clientSocket = incomingSocket;
                     executorService.submit(() -> forwardData(clientSocket, incomingSocket));
                     executorService.submit(() -> forwardData(incomingSocket, clientSocket));
                     return;
@@ -118,13 +117,6 @@ public class Tunnel {
         } catch (IOException e) {
             throw new RuntimeException("Failed to close tunnel.", e);
         }
-    }
-
-    /**
-     * @return Returns port for connection to "from"
-     */
-    public int PortToPrev() {
-        return clientSocket != null ? clientSocket.getLocalPort() : -1;
     }
 
     /**
