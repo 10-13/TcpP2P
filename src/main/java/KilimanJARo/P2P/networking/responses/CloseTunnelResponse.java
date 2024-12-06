@@ -1,3 +1,3 @@
-package KilimanJARo.P2P.client.response;
+package KilimanJARo.P2P.networking.responses;
 
 public record CloseTunnelResponse (boolean isSuccess, String message) {}

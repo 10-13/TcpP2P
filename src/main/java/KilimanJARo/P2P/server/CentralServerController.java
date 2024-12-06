@@ -2,17 +2,15 @@ package KilimanJARo.P2P.server;
 
 import KilimanJARo.P2P.client.tunneling.Tunnel;
 import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
-import KilimanJARo.P2P.server.requests.AuthRequest;
-import KilimanJARo.P2P.server.requests.LogoutRequest;
-import KilimanJARo.P2P.server.requests.RegisterRequest;
-import KilimanJARo.P2P.server.responses.AuthResponse;
-import KilimanJARo.P2P.server.responses.LogoutResponse;
-import KilimanJARo.P2P.server.responses.RegisterResponse;
+import KilimanJARo.P2P.networking.requests.AuthRequest;
+import KilimanJARo.P2P.networking.requests.LogoutRequest;
+import KilimanJARo.P2P.networking.requests.RegisterRequest;
+import KilimanJARo.P2P.networking.responses.AuthResponse;
+import KilimanJARo.P2P.networking.responses.LogoutResponse;
+import KilimanJARo.P2P.networking.responses.RegisterResponse;
 import KilimanJARo.P2P.user.User;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
