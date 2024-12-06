@@ -1,3 +1,3 @@
-package KilimanJARo.P2P.client.request;
+package KilimanJARo.P2P.networking.requests;
 
 public record CloseConnectionRequest (String username) {}
