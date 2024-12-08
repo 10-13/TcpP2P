@@ -14,6 +14,7 @@ public class UserConnectionMonitor {
 
     private final SortedSet<UserEntry> entrySet = new TreeSet<>(Comparator.comparing(a->a.time));
     private final HashMap<String, UserEntry> mapedEntry = new HashMap<>();
+    private final Random rand = new Random();
 
     private static UserConnectionMonitor instance;
     public static synchronized UserConnectionMonitor getInstance() {
@@ -41,8 +42,29 @@ public class UserConnectionMonitor {
         return entrySet.stream().map(a->a.name);
     }
     public Stream<String> getRandomizedSet(int count) {
-        // TODO: Implement receiving set of random users.
-        throw new RuntimeException("Not implemented.");
+        class RandomizeNext {
+            int randomized = 0;
+            int position = -1;
+            int pos = 0;
+
+            public void next() {
+                position += rand.nextInt(position + 1, getUserCount() - count + randomized++);
+            }
+
+            public boolean filter() {
+                if (pos++ == position) {
+                    next();
+                    return true;
+                }
+                return false;
+            }
+
+            public boolean filter(UserEntry userEntry) {
+                return filter();
+            }
+        }
+        final RandomizeNext rnd_gen = new RandomizeNext();
+        return entrySet.stream().filter(rnd_gen::filter).map(a->a.name);
     }
 
     public int getUserCount() {
