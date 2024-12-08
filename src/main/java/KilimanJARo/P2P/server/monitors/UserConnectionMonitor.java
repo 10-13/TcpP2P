@@ -1,19 +1,14 @@
-// src/main/java/KilimanJARo/P2P/monitors/UserConnectionMonitor.java
 package KilimanJARo.P2P.server.monitors;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
-/*
- * This class is responsible for monitoring the connection of the users.
- * It will help to determine the best third-part member of the tunnel to run the connection through.
- */
 public class UserConnectionMonitor {
     private record UserEntry(String name, Instant time) {}
 
     private final SortedSet<UserEntry> entrySet = new TreeSet<>(Comparator.comparing(a->a.time));
-    private final HashMap<String, UserEntry> mapedEntry = new HashMap<>();
+    private final HashMap<String, UserEntry> mappedEntry = new HashMap<>();
     private final Random rand = new Random();
 
     private static UserConnectionMonitor instance;
@@ -27,18 +22,22 @@ public class UserConnectionMonitor {
     public synchronized void userConnected(String username) {
         var entry = new UserEntry(username, Instant.now());
         entrySet.add(entry);
-        mapedEntry.put(username, entry);
+        mappedEntry.put(username, entry);
     }
     public synchronized void userDisconnected(String username) {
-        entrySet.remove(mapedEntry.get(username));
-        mapedEntry.remove(username);
+        entrySet.remove(mappedEntry.get(username));
+        mappedEntry.remove(username);
     }
-    public synchronized void clearAllUsers() {
+    public synchronized void clearUsers() {
         entrySet.clear();
-        mapedEntry.clear();
+        mappedEntry.clear();
     }
 
-    public Stream<String> getOnlineUsers() {
+    public int getUserCount() {
+        return entrySet.size();
+    }
+
+    public Stream<String> getUsers() {
         return entrySet.stream().map(a->a.name);
     }
     public Stream<String> getRandomizedSet(int count) {
@@ -47,27 +46,16 @@ public class UserConnectionMonitor {
             int position = -1;
             int pos = 0;
 
-            public void next() {
-                position += rand.nextInt(position + 1, getUserCount() - count + randomized++);
-            }
-
-            public boolean filter() {
+            public boolean filter(UserEntry userEntry) {
                 if (pos++ == position) {
-                    next();
+                    position += rand.nextInt(position + 1, getUserCount() - count + randomized++);
                     return true;
                 }
                 return false;
             }
-
-            public boolean filter(UserEntry userEntry) {
-                return filter();
-            }
         }
-        final RandomizeNext rnd_gen = new RandomizeNext();
-        return entrySet.stream().filter(rnd_gen::filter).map(a->a.name);
-    }
 
-    public int getUserCount() {
-        return entrySet.size();
+        final RandomizeNext rndGen = new RandomizeNext();
+        return entrySet.stream().filter(rndGen::filter).map(a->a.name);
     }
 }
