@@ -16,9 +16,6 @@ public class UserConnectionMonitor {
     private final HashMap<String, UserEntry> mapedEntry = new HashMap<>();
 
     private static UserConnectionMonitor instance;
-
-    public UserConnectionMonitor() {}
-
     public static synchronized UserConnectionMonitor getInstance() {
         if (instance == null) {
             instance = new UserConnectionMonitor();
