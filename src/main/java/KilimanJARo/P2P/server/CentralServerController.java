@@ -38,7 +38,7 @@ public class CentralServerController {
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
@@ -78,14 +78,9 @@ public class CentralServerController {
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
         String username = request.username();
-        if (userConnectionMonitor.isUserConnected(username)) {
-            userConnectionMonitor.userDisconnected(username);
-            logger.info("User logged out successfully: " + username + "\n");
-            return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));
-        } else {
-            logger.info("Logout failed: User not found - " + username);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new LogoutResponse(false, "User not found"));
-        }
+        userConnectionMonitor.userDisconnected(username);
+        logger.info("User logged out successfully: " + username + "\n");
+        return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));
     }
 
     /**
@@ -108,9 +103,7 @@ public class CentralServerController {
     @GetMapping("/online_users")
     public String getOnlineUsers() {
         StringBuilder onlineUsersList = new StringBuilder();
-        for (String username : userConnectionMonitor.getOnlineUsers()) {
-            onlineUsersList.append(username).append("\n");
-        }
+        userConnectionMonitor.getUsers().forEach(username->onlineUsersList.append(username).append("\n"));
         return onlineUsersList.toString();
     }
 
@@ -121,7 +114,7 @@ public class CentralServerController {
 
     @Deprecated
     public ArrayList<String> getOnlineUsersList() {
-        return userConnectionMonitor.getOnlineUsers();
+        return new ArrayList<>(userConnectionMonitor.getUsers().toList());
     }
 
     private String generateRandomPassword() {
