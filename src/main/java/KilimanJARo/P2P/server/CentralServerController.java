@@ -38,7 +38,7 @@ public class CentralServerController {
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
