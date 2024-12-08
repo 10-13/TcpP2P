@@ -103,9 +103,7 @@ public class CentralServerController {
     @GetMapping("/online_users")
     public String getOnlineUsers() {
         StringBuilder onlineUsersList = new StringBuilder();
-        for (String username : userConnectionMonitor.getUsers().toList()) {
-            onlineUsersList.append(username).append("\n");
-        }
+        userConnectionMonitor.getUsers().forEach(username->onlineUsersList.append(username).append("\n"));
         return onlineUsersList.toString();
     }
 
