@@ -50,7 +50,7 @@ public class CentralServerController {
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
         } catch (IOException e) {
-            e.printStackTrace(System.out);
+            e.printStackTrace();
         }
         this.restTemplate = restTemplate;
         this.properties = new SmartProperties(serverProperties.getObject());
@@ -63,10 +63,14 @@ public class CentralServerController {
             logger.info("Registration failed: User already exists - " + request.name());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new RegisterResponse(false, "User already exists", null));
         }
+        int userId;
+        do {
+            userId = random.nextInt(10000);
+        } while (users.containsKey(userId));
 
         String password = generateRandomPassword();
         String passwordHash = hashPassword(password);
-        User newUser = new User(request.name(), passwordHash);
+        User newUser = new User(userId, request.name(), passwordHash);
         users.put(newUser.getUsername(), newUser);
         logger.info("User registered successfully: " + request.name() + " " + password + "\n");
         return ResponseEntity.ok(new RegisterResponse(true, "User registered successfully", password));
@@ -91,6 +95,10 @@ public class CentralServerController {
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
         String username = request.username();
+        if (!checkIfOnline(username)) {
+            logger.info("Logout failed: User not found - " + username);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new LogoutResponse(false, "User not found"));
+        }
         userConnectionMonitor.userDisconnected(username);
         logger.info("User logged out successfully: " + username + "\n");
         return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));
@@ -215,7 +223,9 @@ public class CentralServerController {
     @GetMapping("/online_users")
     public String getOnlineUsers() {
         StringBuilder onlineUsersList = new StringBuilder();
-        userConnectionMonitor.getUsers().forEach(username->onlineUsersList.append(username).append("\n"));
+        for (String username : userConnectionMonitor.getOnlineUsers()) {
+            onlineUsersList.append(username).append("\n");
+        }
         return onlineUsersList.toString();
     }
 
@@ -226,7 +236,7 @@ public class CentralServerController {
 
     @Deprecated
     public ArrayList<String> getOnlineUsersList() {
-        return new ArrayList<>(userConnectionMonitor.getUsers().toList());
+        return userConnectionMonitor.getOnlineUsers();
     }
 
     private boolean checkIfOnline(String username) {
