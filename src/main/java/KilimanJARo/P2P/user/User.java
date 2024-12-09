@@ -4,6 +4,7 @@ public class User {
     private final int id;
     private final String username;
     private String passwordHash;
+    private int currentPort;
 
     public User(int id, String username, String passwordHash) {
         this.id = id;
@@ -25,6 +26,14 @@ public class User {
 
     public void setPass(String newPassword) {
         passwordHash = newPassword;
+    }
+
+    public int getCurrentPort() {
+        return currentPort;
+    }
+
+    public void setCurrentPort(int port) {
+        currentPort = port;
     }
 
     @Override
