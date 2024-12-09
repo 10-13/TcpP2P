@@ -3,6 +3,7 @@ package KilimanJARo.P2P.user;
 public class User {
     private final String username;
     private String passwordHash;
+    private int currentPort;
 
     public User(String username, String passwordHash) {
         this.username = username;
@@ -19,6 +20,14 @@ public class User {
 
     public void setPass(String newPassword) {
         passwordHash = newPassword;
+    }
+
+    public int getCurrentPort() {
+        return currentPort;
+    }
+
+    public void setCurrentPort(int port) {
+        currentPort = port;
     }
 
     @Override

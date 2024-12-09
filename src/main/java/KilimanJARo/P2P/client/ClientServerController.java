@@ -34,14 +34,14 @@ public class ClientServerController {
     private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
 
     @Autowired
-    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("centralServerProperties") PropertiesFactoryBean centralServerProperties, @Qualifier("serverProperties") PropertiesFactoryBean serverProperties) throws IOException {
+    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("centralFromClientServerProperties") PropertiesFactoryBean centralServerProperties, @Qualifier("clientServerProperties") PropertiesFactoryBean serverProperties) throws IOException {
         this.restTemplate = restTemplate;
         this.central_properties = new SmartProperties(centralServerProperties.getObject());
         this.properties = new SmartProperties(serverProperties.getObject());
     }
 
-    @GetMapping("/registerWithMainServer")
-    public ResponseEntity<RegisterResponse> registerWithMainServer(@RequestParam RegisterRequest request) {
+    @GetMapping("/registerWithCentralServer")
+    public ResponseEntity<RegisterResponse> registerWithCentralServer(@RequestParam RegisterRequest request) {
         username = request.name();
         RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
@@ -61,8 +61,8 @@ public class ClientServerController {
         }
     }
 
-    @GetMapping("/authWithMainServer")
-    public ResponseEntity<AuthResponse> authWithMainServer(@RequestParam AuthRequest request) {
+    @GetMapping("/authWithCentralServer")
+    public ResponseEntity<AuthResponse> authWithCentralServer(@RequestParam AuthRequest request) {
         String usernameIn = request.name();
         if (!usernameIn.equals(username)) {
             return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
@@ -88,8 +88,8 @@ public class ClientServerController {
     }
 
     @Deprecated
-    @GetMapping("/authWithMainServerAuto")
-    public ResponseEntity<AuthResponse> authWithMainServerAuto() {
+    @GetMapping("/authWithCentralServerAuto")
+    public ResponseEntity<AuthResponse> authWithCentralServerAuto() {
         AuthRequest request = new AuthRequest(username, password);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
@@ -110,8 +110,8 @@ public class ClientServerController {
         }
     }
 
-    @GetMapping("/logoutFromMainServer")
-    public ResponseEntity<LogoutResponse> logoutFromMainServer(@RequestParam LogoutRequest request) {
+    @GetMapping("/logoutFromCentralServer")
+    public ResponseEntity<LogoutResponse> logoutFromCentralServer(@RequestParam LogoutRequest request) {
         String usernameIn = request.username();
         if (!usernameIn.equals(username)) {
             return ResponseEntity.status(403).body(new LogoutResponse(false, "Logout failed due to invalid credentials"));
@@ -191,9 +191,10 @@ public class ClientServerController {
     }
 
     @PostMapping("/establishConnection")
-    public void establishedConnection(@RequestBody ConnectionEstablishedRequest request) {
+    public ResponseEntity<Void> establishedConnection(@RequestBody ConnectionEstablishedRequest request) {
         String url = properties.getProperty("front.api.connectionEstablished.url");
         restTemplate.postForEntity(url, request, Void.class);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/requestConnectionOut")
@@ -233,6 +234,13 @@ public class ClientServerController {
         } else {
             return ResponseEntity.status(500).body(new CloseConnectionResponse(false));
         }
+    }
+
+    @PostMapping("/connectionClosed")
+    public ResponseEntity<Void> connectionClosed(@RequestBody CloseConnectionRequest request) {
+        String url = properties.getProperty("front.api.connectionClosed.url");
+        restTemplate.postForEntity(url, request, Void.class);
+        return ResponseEntity.ok().build();
     }
 
     private String generateLocalId() {
