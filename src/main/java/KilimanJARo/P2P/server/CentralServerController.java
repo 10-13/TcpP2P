@@ -48,14 +48,10 @@ public class CentralServerController {
             logger.info("Registration failed: User already exists - " + request.name());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new RegisterResponse(false, "User already exists", null));
         }
-        int userId;
-        do {
-            userId = random.nextInt(10000);
-        } while (users.containsKey(userId));
 
         String password = generateRandomPassword();
         String passwordHash = hashPassword(password);
-        User newUser = new User(userId, request.name(), passwordHash);
+        User newUser = new User(request.name(), passwordHash);
         users.put(newUser.getUsername(), newUser);
         logger.info("User registered successfully: " + request.name() + " " + password + "\n");
         return ResponseEntity.ok(new RegisterResponse(true, "User registered successfully", password));
