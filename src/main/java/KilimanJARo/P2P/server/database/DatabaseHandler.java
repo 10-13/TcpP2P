@@ -16,30 +16,23 @@ public class DatabaseHandler {
     /**
      * A universal method that processes a collection of User
      * entities using a specified operation.
-     * ! WORKS WITH NOT OPTIMAL SPEED, because of opening session every paste,
-     * but hope we'll prefer single methods ;)
      * @param users a collection of User entities to be processed
      * @param action a Consumer that represents the operation to perform on each User
      */
-    private static void process(Collection<User> users, Consumer<User> action) {
+    private static void process(Collection<User> users, Session session, Consumer<User> action) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-            int count = 0;
-            for (User user : users) {
-                action.accept(user);
-                if (++count % BATCH_SIZE == 0) {
-                    session.flush();
-                    session.clear();
-                }
+        transaction = session.beginTransaction();
+        int count = 0;
+        for (User user : users) {
+            action.accept(user);
+            if (++count % BATCH_SIZE == 0) {
+                session.flush();
+                session.clear();
             }
-            transaction.commit();
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            e.printStackTrace();
-            throw new RuntimeException("Failed to process users", e);
         }
+        transaction.commit();
     }
+
 
     /**
      * Save a user to the database.
@@ -62,11 +55,11 @@ public class DatabaseHandler {
      * @param users a collection of User entities to be saved
      */
     public static void save(Collection<User> users) {
-        process(users, user -> {
-            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                session.save(user);
-            }
-        });
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            process(users, session, session::save);
+        }catch (HibernateException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -90,11 +83,11 @@ public class DatabaseHandler {
      * @param users a collection of User entities to be updated
      */
     public static void update(Collection<User> users) {
-        process(users, user -> {
-            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                session.update(user);
-            }
-        });
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            process(users, session, session::update);
+        } catch (HibernateException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -118,11 +111,11 @@ public class DatabaseHandler {
      * @param users a collection of User entities to be deleted
      */
     public static void delete(Collection<User> users) {
-        process(users, user -> {
-            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                session.delete(user);
-            }
-        });
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            process(users, session, session::delete);
+        }catch (HibernateException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
