@@ -1,103 +1,104 @@
 package KilimanJARo.P2P.server.database;
 
 import KilimanJARo.P2P.user.User;
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class DatabaseHandlerTest {
 
-    @Mock
-    private Session mockSession;
-
-    @Mock
-    private Transaction mockTransaction;
-
-    @Mock
-    private SessionFactory mockSessionFactory;
-
-    @InjectMocks
-    private DatabaseHandler databaseHandler;
+    private SessionFactory sessionFactory;
+    private Session session;
+    private Transaction transaction;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        sessionFactory = mock(SessionFactory.class);
+        session = mock(Session.class);
+        transaction = mock(Transaction.class);
+
+        when(sessionFactory.openSession()).thenReturn(session);
+        when(session.beginTransaction()).thenReturn(transaction);
+
+        HibernateUtil.setSessionFactory(sessionFactory);
     }
 
     @Test
-    void testSaveUsers() {
-        User user1 = new User("user1", "password1");
-        User user2 = new User("user2", "password2");
-        Collection<User> users = Arrays.asList(user1, user2);
+    void testSaveUser() {
+        User user = new User("testUser", "passwordHash");
 
-        // Mock the behavior of session and transaction
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        doNothing().when(mockSession).save(any(User.class));
-        when(mockSession.getSessionFactory()).thenReturn(mockSessionFactory);
+        DatabaseHandler.save(user);
 
-        // You might want to call the instance method of DatabaseHandler instead of the static one
-        databaseHandler.save(users);  // Assume 'save' is refactored to an instance method
+        verify(session).save(user);
+        verify(transaction).commit();
 
-        verify(mockSession, times(2)).save(any(User.class));
-        verify(mockTransaction).commit();
+        assertEquals("testUser", user.getUsername());
+        assertTrue(user.isCorrectPassword("passwordHash"));
     }
 
     @Test
-    void testUpdateUsers() {
-        User user1 = new User("user1", "password1");
-        User user2 = new User("user2", "password2");
-        Collection<User> users = Arrays.asList(user1, user2);
+    void testUpdateUser() {
+        User user = new User("testUser", "passwordHash");
 
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        doNothing().when(mockSession).update(any(User.class));
-        when(mockSession.getSessionFactory()).thenReturn(mockSessionFactory);
+        DatabaseHandler.update(user);
 
-        databaseHandler.update(users);
+        verify(session).update(user);
+        verify(transaction).commit();
 
-        verify(mockSession, times(2)).update(any(User.class));
-        verify(mockTransaction).commit();
+        assertEquals("testUser", user.getUsername());
+        assertTrue(user.isCorrectPassword("passwordHash"));
     }
 
     @Test
-    void testDeleteUsers() {
-        User user1 = new User("user1", "password1");
-        User user2 = new User("user2", "password2");
-        Collection<User> users = Arrays.asList(user1, user2);
+    void testDeleteUser() {
+        User user = new User("testUser", "passwordHash");
 
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        doNothing().when(mockSession).delete(any(User.class));
-        when(mockSession.getSessionFactory()).thenReturn(mockSessionFactory);
+        DatabaseHandler.delete(user);
 
-        databaseHandler.delete(users);
+        verify(session).delete(user);
+        verify(transaction).commit();
 
-        verify(mockSession, times(2)).delete(any(User.class));
-        verify(mockTransaction).commit();
+        assertEquals("testUser", user.getUsername());
+        assertTrue(user.isCorrectPassword("passwordHash"));
     }
 
     @Test
-    void testSaveUsers_WithException_ShouldRollback() {
-        User user1 = new User("user1", "password1");
-        User user2 = new User("user2", "password2");
-        Collection<User> users = Arrays.asList(user1, user2);
+    void testGetUser() {
+        User user = new User("testUser", "passwordHash");
+        when(session.get(User.class, "testUser")).thenReturn(user);
 
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        doThrow(new HibernateException("Mock Exception")).when(mockSession).save(any(User.class));
-        when(mockSession.getSessionFactory()).thenReturn(mockSessionFactory);
+        User result = DatabaseHandler.get("testUser");
 
-        try {
-            databaseHandler.save(users);
-        } catch (RuntimeException e) {
-            verify(mockTransaction).rollback();
-        }
+        assertEquals(user, result);
+        assertEquals("testUser", result.getUsername());
+        assertTrue(result.isCorrectPassword("passwordHash"));
+    }
+
+    @Test
+    void testGetAllUsers() {
+        User user1 = new User("user1", "passwordHash1");
+        User user2 = new User("user2", "passwordHash2");
+        List<User> users = Arrays.asList(user1, user2);
+
+        Query<User> query = mock(Query.class);
+        when(session.createQuery("from User", User.class)).thenReturn(query);
+        when(query.getResultList()).thenReturn(users);
+
+        List<User> result = DatabaseHandler.getAll();
+
+        assertEquals(users, result);
+        assertEquals("user1", result.get(0).getUsername());
+        assertTrue(result.get(0).isCorrectPassword("passwordHash1"));
+        assertEquals("user2", result.get(1).getUsername());
+        assertTrue(result.get(1).isCorrectPassword("passwordHash2"));
     }
 }
