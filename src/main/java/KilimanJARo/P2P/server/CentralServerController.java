@@ -1,6 +1,8 @@
 package KilimanJARo.P2P.server;
 
 import KilimanJARo.P2P.client.tunneling.Tunnel;
+import KilimanJARo.P2P.server.database.DatabaseHandler;
+import KilimanJARo.P2P.server.database.HibernateUtil;
 import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
 import KilimanJARo.P2P.networking.requests.AuthRequest;
 import KilimanJARo.P2P.networking.requests.LogoutRequest;
@@ -14,10 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -37,6 +36,7 @@ public class CentralServerController {
             FileHandler fileHandler = new FileHandler("central_server.log", true);
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
+            HibernateUtil.initializeSessionFactory();
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
@@ -85,11 +85,12 @@ public class CentralServerController {
     @Deprecated
     @GetMapping("/users")
     public String getUsers() {
-        StringBuilder usersList = new StringBuilder();
-        for (User user : users.values()) {
-            usersList.append(user.toString()).append("\n");
+        List<User> usersList = DatabaseHandler.getAll();
+        StringBuilder usersString = new StringBuilder();
+        for (User user : usersList) {
+            usersString.append(user.toString()).append("\n");
         }
-        return usersList.toString();
+        return usersString.toString();
     }
 
     /**
