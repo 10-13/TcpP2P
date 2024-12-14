@@ -1,45 +1,36 @@
 # Базовый образ
-FROM openjdk:17-jdk-slim
+FROM openjdk:23-jdk-slim
 
 # Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
-    # Сетевые утилиты
     wget \
     curl \
     net-tools \
     iputils-ping \
     dnsutils \
     iproute2 \
-    netcat \
-    # Утилиты для работы с системой
+    netcat-traditional \
     procps \
     htop \
     nano \
     vim \
     less \
-    # Компиляторы и инструменты разработки
     build-essential \
-    git \
-    # ZeroTier
-    && curl -s https://install.zerotier.com | sudo bash \
-    # Очистка кэша apt
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    git
+
+# Установка ZeroTier
+RUN curl -s https://install.zerotier.com | bash
+
+# Очистка кэша apt
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Установка Python (если нужен)
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip
 
-# Базовые Python библиотеки
-RUN pip3 install \
-    requests \
-    paramiko \
-    psutil \
-    flask
-
 # Копирование приложения
-COPY target/*.jar app.jar
+COPY target/P2P-0.0.1-SNAPSHOT.jar /app/app.jar
 
 # Создание рабочей директории
 WORKDIR /app

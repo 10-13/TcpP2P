@@ -62,7 +62,7 @@ public class CentralServerController {
 		this.properties =
 				new SmartProperties(publicProperties.getObject(), serverProperties.getObject());
 		networkId = properties.getProperty("network_id");
-		token = System.getenv("ZEROTIER_API_TOKEN");
+		token = System.getenv("ZEROTIER_TOKEN");
 		getZeroTierAddress();
 		ztService = new ZTServiceImpl(token);
 		ZTNetworkMember ztNetworkMember = new ZTNetworkMember(networkId, zerotierAddress);
@@ -81,7 +81,6 @@ public class CentralServerController {
 
 			if (line != null) {
 				String[] outputParts = line.split("\\s+");
-
 				if (outputParts.length >= 3) {
 					zerotierAddress = outputParts[2];
 				}
