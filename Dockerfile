@@ -1,3 +1,11 @@
+# Сборочный образ
+FROM maven:3.9.9-eclipse-temurin-23-alpine AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+
 # Базовый образ
 FROM openjdk:23-jdk-slim
 
@@ -30,7 +38,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip
 
 # Копирование приложения
-COPY target/P2P-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY --from=build /app/target/P2P-0.0.1-SNAPSHOT.jar /app/app.jar
 
 # Создание рабочей директории
 WORKDIR /app
