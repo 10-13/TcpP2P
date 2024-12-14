@@ -5,10 +5,15 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
+FROM zerotier/zerotier:latest AS zerotier
+
 
 # Базовый образ
 FROM openjdk:23-jdk-slim
-
+COPY --from=zerotier /usr/sbin/zerotier-cli /usr/bin/zerotier-cli
+COPY --from=zerotier /usr/sbin/zerotier-one /usr/bin/zerotier-one
+RUN chmod +x /usr/bin/zerotier-cli
+RUN chmod +x /usr/bin/zerotier-one
 # Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
     wget \
@@ -42,9 +47,9 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update
 RUN apt-get install -y libapr1 libapr1-dev libapache2-mod-jk
 RUN apt-get install -y libtcnative-1
+
 # Копирование приложения
 COPY --from=build /app/target/P2P-0.0.1-SNAPSHOT.jar /app/app.jar
-
 # Создание рабочей директории
 WORKDIR /app
 
@@ -62,4 +67,5 @@ EXPOSE 443
 EXPOSE 8090
 
 # Точка входа
+CMD ["--privileged"]
 ENTRYPOINT ["/entrypoint.sh"]
