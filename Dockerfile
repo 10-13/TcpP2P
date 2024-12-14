@@ -24,8 +24,7 @@ RUN apt-get update && apt-get install -y \
     git \
     
     # ZeroTier
-    && wget https://download.zerotier.com/debian/bullseye/pool/main/z/zerotier-one/zerotier-one_1.10.6-1_amd64.deb \
-    && dpkg -i zerotier-one_1.10.6-1_amd64.deb \
+    && curl -s https://install.zerotier.com | sudo bash
     
     # Очистка кэша apt
     && apt-get clean \
