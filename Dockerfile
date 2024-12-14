@@ -34,12 +34,11 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get install -y libtcnative-1
 
 # Установка ZeroTier
-RUN curl -s 'https://raw.githubusercontent.com/zerotier/ZeroTierOne/main/doc/contact%40zerotier.com.gpg' | gpg --import && if z=$(curl -s 'https://install.zerotier.com/' | gpg); then echo "$z" | bash; fi
 
 # Очистка кэша apt
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # В Dockerfile или docker-entrypoint.sh
-RUN chmod +x /usr/sbin/zerotier-one
+
 # Установка Python (если нужен)
 RUN apt-get update && apt-get install -y \
     python3 \
