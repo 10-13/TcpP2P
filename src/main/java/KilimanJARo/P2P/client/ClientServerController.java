@@ -10,9 +10,7 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -96,7 +94,8 @@ public class ClientServerController {
 
     @Deprecated
     public ResponseEntity<RegisterResponse> registerWithCentralServerAuto() {
-        username = "Server1";
+        username = "Server";
+
         RegisterRequest requestToCentral = new RegisterRequest(username, zerotierAddress);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
@@ -107,6 +106,18 @@ public class ClientServerController {
                         .body(requestToCentral);
         ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
         password = response.getBody().password();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("client_logs.txt", true))) {
+            writer.write("Server registered successfully " + username + " " + password);
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("client_pass.txt", true))) {
+            writer.write(password);
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         if (response.getBody() != null && response.getBody().isSuccess()) {
             return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully", response.getBody().password()));
@@ -146,7 +157,18 @@ public class ClientServerController {
 
     @Deprecated
     public ResponseEntity<AuthResponse> authWithCentralServerAuto() {
-        AuthRequest request = new AuthRequest(username, password, -1);
+        username = "Server";
+        String lastLine = "";
+        try (BufferedReader reader = new BufferedReader(new FileReader("client_pass.txt"))) {
+            String currentLine;
+            while ((currentLine = reader.readLine()) != null) {
+                lastLine = currentLine;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Last line: " + lastLine);
+        AuthRequest request = new AuthRequest(username, lastLine, -1);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -158,6 +180,19 @@ public class ClientServerController {
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(requestEntity, AuthResponse.class);
         password = response.getBody().nextPassword();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("client_logs.txt", true))) {
+            writer.write("Server logged in successfully " + username + " " + password);
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("client_pass.txt", true))) {
+            writer.write(password);
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         if (response.getBody() != null && response.getBody().success()) {
             return ResponseEntity.ok(new AuthResponse(true, "Server authenticated successfully", response.getBody().nextPassword()));
