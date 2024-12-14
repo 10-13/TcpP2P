@@ -2,6 +2,9 @@ package KilimanJARo.P2P.server;
 
 import KilimanJARo.P2P.client.SmartProperties;
 import KilimanJARo.P2P.client.tunneling.Tunnel;
+import KilimanJARo.P2P.server.database.DatabaseHandler;
+import KilimanJARo.P2P.server.database.HibernateUtil;
+import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
 import KilimanJARo.P2P.networking.requests.AuthRequest;
 import KilimanJARo.P2P.networking.requests.RegisterRequest;
 import KilimanJARo.P2P.networking.responses.AuthResponse;
@@ -23,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.*;
 import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
@@ -55,6 +59,7 @@ public class CentralServerController {
 			FileHandler fileHandler = new FileHandler("central_server.log", true);
 			fileHandler.setFormatter(new SimpleFormatter());
 			logger.addHandler(fileHandler);
+			HibernateUtil.initializeSessionFactory();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -248,20 +253,19 @@ public class CentralServerController {
   }
 */
 
-	/**
-	 * This method is for test purposes only and will be removed later.
-	 */
-
-
-	@Deprecated
-	@GetMapping("/users")
-	public String getUsers() {
-		StringBuilder usersList = new StringBuilder();
-		for (User user : users.values()) {
-			usersList.append(user.toString()).append("\n");
-		}
-		return usersList.toString();
-	}
+    /**
+     * This method is for test purposes only and will be removed later.
+     */
+    @Deprecated
+    @GetMapping("/users")
+    public String getUsers() {
+        List<User> usersList = DatabaseHandler.getAll();
+        StringBuilder usersString = new StringBuilder();
+        for (User user : usersList) {
+            usersString.append(user.toString()).append("\n");
+        }
+        return usersString.toString();
+    }
 
 
 	/**

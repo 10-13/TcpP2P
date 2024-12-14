@@ -1,7 +1,14 @@
 package KilimanJARo.P2P.user;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "db_table_users")
 public class User {
+    @Column(name = "username", nullable = false, unique = true)
     private final String username;
+
+    @Column(name = "passwordHash", nullable = false)
     private String passwordHash;
     private int currentPort;
 
