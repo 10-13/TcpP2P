@@ -11,21 +11,17 @@ RUN apt-get update && apt-get install -y \
     dnsutils \
     iproute2 \
     netcat \
-    
     # Утилиты для работы с системой
     procps \
     htop \
     nano \
     vim \
     less \
-    
     # Компиляторы и инструменты разработки
     build-essential \
     git \
-    
     # ZeroTier
-    && curl -s https://install.zerotier.com | sudo bash
-    
+    && curl -s https://install.zerotier.com | sudo bash \
     # Очистка кэша apt
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -56,8 +52,8 @@ RUN chmod +x /entrypoint.sh
 ENV ZEROTIER_TOKEN=VPj5xJYBLZAzCUuXOs8nG3aYKAlSByev
 
 # Порты (примерный список)
-EXPOSE 8080 
-EXPOSE 22 
+EXPOSE 8080
+EXPOSE 22
 EXPOSE 443
 EXPOSE 8090
 
