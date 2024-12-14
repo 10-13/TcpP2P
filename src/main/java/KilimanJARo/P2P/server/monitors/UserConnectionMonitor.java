@@ -33,6 +33,10 @@ public class UserConnectionMonitor {
         mappedEntry.clear();
     }
 
+    public synchronized boolean isUserConnected(String username) {
+        return mappedEntry.containsKey(username);
+    }
+
     public int getUserCount() {
         return entrySet.size();
     }

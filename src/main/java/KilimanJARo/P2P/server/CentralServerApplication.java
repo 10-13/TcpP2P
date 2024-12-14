@@ -1,6 +1,5 @@
 package KilimanJARo.P2P.server;
 
-import KilimanJARo.P2P.client.ClientServerApplication;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +18,7 @@ import java.util.stream.Stream;
 @SpringBootApplication
 public class CentralServerApplication {
     public static void main(String[] args) {
-        String[] defArgs = {"--spring.config.location=central_server_private.properties"};
+        String[] defArgs = {"--spring.config.name=central_server_private"};
         if (args != null) {
             String[] allArgs = Stream.concat(Arrays.stream(args), Arrays.stream(defArgs)).toArray(String[]::new);
             SpringApplication.run(CentralServerApplication.class, allArgs);
@@ -33,13 +32,13 @@ public class CentralServerApplication {
         return new RestTemplate();
     }
 
-    @Value("${client_server_properties}")
-    private String centralServerPropertiesPath;
+    @Value("${public_properties}")
+    private String publicPropertiesPath;
 
-    @Bean(name = "clientFromCentralServerProperties")
-    public PropertiesFactoryBean centralServerProperties() {
+    @Bean(name = "publicProperties")
+    public PropertiesFactoryBean publicProperties() {
         PropertiesFactoryBean bean = new PropertiesFactoryBean();
-        bean.setLocation(new ClassPathResource(centralServerPropertiesPath + ".properties"));
+        bean.setLocation(new ClassPathResource(publicPropertiesPath + ".properties"));
         return bean;
     }
 

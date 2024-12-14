@@ -10,7 +10,9 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -20,9 +22,9 @@ import java.util.Map;
 @RequestMapping("/api")
 public class ClientServerController {
     private final RestTemplate restTemplate;
-    private final SmartProperties central_properties;
     private final SmartProperties properties;
     private String username = "";
+    private String zerotierAddress;
 
     /**
      * This field is for test purposes only and will be removed later and moved to front.
@@ -34,21 +36,52 @@ public class ClientServerController {
     private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
 
     @Autowired
-    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("centralFromClientServerProperties") PropertiesFactoryBean centralServerProperties, @Qualifier("clientServerProperties") PropertiesFactoryBean serverProperties) throws IOException {
+    public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("publicProperties") PropertiesFactoryBean publicProperties, @Qualifier("clientServerProperties") PropertiesFactoryBean serverProperties) throws IOException {
         this.restTemplate = restTemplate;
-        this.central_properties = new SmartProperties(centralServerProperties.getObject());
-        this.properties = new SmartProperties(serverProperties.getObject());
+        this.properties = new SmartProperties(publicProperties.getObject(), serverProperties.getObject());
+        getZeroTierAddress();
     }
 
+    private void getZeroTierAddress() throws IOException {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("zerotier-cli", "info");
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+
+            if (line != null) {
+                String[] outputParts = line.split("\\s+");
+
+                if (outputParts.length >= 3) {
+                    zerotierAddress = outputParts[2];
+                }
+            } else {
+                throw new RuntimeException("Failed to get ZeroTier address");
+            }
+
+            process.waitFor();
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /*
+     * Registers client server with central server. Gets a request from front.
+     * Sends a request to central server.
+     * Returns a response to front.
+     */
     @GetMapping("/registerWithCentralServer")
     public ResponseEntity<RegisterResponse> registerWithCentralServer(@RequestParam RegisterRequest request) {
         username = request.name();
-        RegisterRequest requestToCentral = new RegisterRequest(username);
+        RegisterRequest requestToCentral = new RegisterRequest(username, zerotierAddress);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
         RequestEntity<RegisterRequest> requestEntity =
-            RequestEntity.post(URI.create(central_properties.getProperty("server.api.register.url")))
+            RequestEntity.post(URI.create(properties.getProperty("central_server.api.register.url")))
             .headers(headers)
             .body(requestToCentral);
         ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
@@ -61,19 +94,43 @@ public class ClientServerController {
         }
     }
 
+    @Deprecated
+    public ResponseEntity<RegisterResponse> registerWithCentralServerAuto() {
+        username = "Server1";
+        RegisterRequest requestToCentral = new RegisterRequest(username, zerotierAddress);
+        HttpHeaders headers = new HttpHeaders();
+        // headers.setBasicAuth("username", "password");
+        // headers.set("Content-Type", "application/json");
+        RequestEntity<RegisterRequest> requestEntity =
+                RequestEntity.post(URI.create(properties.getProperty("central_server.api.register.url")))
+                        .headers(headers)
+                        .body(requestToCentral);
+        ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
+        password = response.getBody().password();
+
+        if (response.getBody() != null && response.getBody().isSuccess()) {
+            return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully", response.getBody().password()));
+        } else {
+            return ResponseEntity.status(500).body(new RegisterResponse(false, "Server registration failed", null));
+        }
+    }
+
+    /*
+     * Authenticates client server with central server. Gets a request from front. Send response to front.
+     */
     @GetMapping("/authWithCentralServer")
     public ResponseEntity<AuthResponse> authWithCentralServer(@RequestParam AuthRequest request) {
         String usernameIn = request.name();
         if (!usernameIn.equals(username)) {
             return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
         }
-        AuthRequest requestToCentral = new AuthRequest(username, password);
+        AuthRequest requestToCentral = new AuthRequest(username, password, -1);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<AuthRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.api.login.url")))
+                .post(URI.create(properties.getProperty("central_server.api.login.url")))
                 .headers(headers)
                 .body(requestToCentral);
 
@@ -88,15 +145,14 @@ public class ClientServerController {
     }
 
     @Deprecated
-    @GetMapping("/authWithCentralServerAuto")
     public ResponseEntity<AuthResponse> authWithCentralServerAuto() {
-        AuthRequest request = new AuthRequest(username, password);
+        AuthRequest request = new AuthRequest(username, password, -1);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<AuthRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.api.login.url")))
+                .post(URI.create(properties.getProperty("central_server.api.login.url")))
                 .headers(headers)
                 .body(request);
 
@@ -110,6 +166,9 @@ public class ClientServerController {
         }
     }
 
+    /*
+        * Logs out client server from central server. Gets a request from front. Sends a request to central server. Returns a response to front.
+     */
     @GetMapping("/logoutFromCentralServer")
     public ResponseEntity<LogoutResponse> logoutFromCentralServer(@RequestParam LogoutRequest request) {
         String usernameIn = request.username();
@@ -122,7 +181,28 @@ public class ClientServerController {
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<LogoutRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.api.logout.url")))
+                .post(URI.create(properties.getProperty("central_server.api.logout.url")))
+                .headers(headers)
+                .body(requestToCentral);
+
+        ResponseEntity<LogoutResponse> response = restTemplate.exchange(requestEntity, LogoutResponse.class);
+
+        if (response.getBody() != null && response.getBody().isSuccess()) {
+            return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));
+        } else {
+            return ResponseEntity.status(500).body(new LogoutResponse(false, "Logout failed"));
+        }
+    }
+
+    @Deprecated
+    public ResponseEntity<LogoutResponse> logoutFromCentralServerAuto() {
+        LogoutRequest requestToCentral = new LogoutRequest(username);
+        HttpHeaders headers = new HttpHeaders();
+        // headers.setBasicAuth("username", "password");
+        // headers.set("Content-Type", "application/json");
+
+        RequestEntity<LogoutRequest> requestEntity = RequestEntity
+                .post(URI.create(properties.getProperty("central_server.api.logout.url")))
                 .headers(headers)
                 .body(requestToCentral);
 
@@ -204,7 +284,7 @@ public class ClientServerController {
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
         RequestEntity<EstablishConnectionRequest> requestEntity =
-                RequestEntity.post(URI.create(central_properties.getProperty("server.api.requestConnection.url")))
+                RequestEntity.post(URI.create(properties.getProperty("central_server.api.requestConnection.url")))
                         .headers(headers)
                         .body(requestToCentral);
         ResponseEntity<EstablishConnectionResponse> response = restTemplate.exchange(requestEntity, EstablishConnectionResponse.class);
@@ -223,7 +303,7 @@ public class ClientServerController {
         // headers.set("Content-Type", "application/json");
 
         RequestEntity<CloseConnectionRequest> requestEntity = RequestEntity
-                .post(URI.create(central_properties.getProperty("server.api.closeConnection.url")))
+                .post(URI.create(properties.getProperty("central_server.api.closeConnection.url")))
                 .headers(headers)
                 .body(requestToCentral);
 

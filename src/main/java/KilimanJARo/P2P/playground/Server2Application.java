@@ -1,3 +1,4 @@
+/*
 package KilimanJARo.P2P.playground;
 
 import KilimanJARo.P2P.server.requests.AuthRequest;
@@ -64,3 +65,4 @@ public class Server2Application {
         return bean;
     }
 }
+*/
