@@ -1,0 +1,2 @@
+zerotier:
+  token: ${ZEROTIER_TOKEN}
