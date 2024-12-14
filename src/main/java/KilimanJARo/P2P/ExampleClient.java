@@ -13,5 +13,6 @@ public class ExampleClient {
 		clientController.authWithCentralServerAuto();
 		Thread.sleep(10000);
 		clientController.logoutFromCentralServerAuto();
+		clientContext.close();
 	}
 }
