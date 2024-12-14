@@ -62,7 +62,7 @@ public class CentralServerController {
 		this.properties =
 				new SmartProperties(publicProperties.getObject(), serverProperties.getObject());
 		networkId = properties.getProperty("network_id");
-		token = System.getenv("ZEROTIER_API_TOKEN");
+		token = System.getenv("ZEROTIER_TOKEN");
 		getZeroTierAddress();
 		ztService = new ZTServiceImpl(token);
 		ZTNetworkMember ztNetworkMember = new ZTNetworkMember(networkId, zerotierAddress);
@@ -81,7 +81,6 @@ public class CentralServerController {
 
 			if (line != null) {
 				String[] outputParts = line.split("\\s+");
-
 				if (outputParts.length >= 3) {
 					zerotierAddress = outputParts[2];
 				}
@@ -123,7 +122,7 @@ public class CentralServerController {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(false, "Authentication failed", null));
 		}
 		String newPassword = generateRandomPassword();
-		user.setPass(newPassword);
+		user.setPass(hashPassword(newPassword));
 		user.setCurrentPort(request.port());
 		userConnectionMonitor.userConnected(request.name());
 		ZTNetworkMember ztNetworkMember = userToZT.get(request.name());
@@ -247,46 +246,53 @@ public class CentralServerController {
       triplets.add(new String[]{previous, to, null});
       return triplets;
   }
-
-  */
-	/** This method is for test purposes only and will be removed later. */
-  /*
-  @Deprecated
-  @GetMapping("/users")
-  public String getUsers() {
-      StringBuilder usersList = new StringBuilder();
-      for (User user : users.values()) {
-          usersList.append(user.toString()).append("\n");
-      }
-      return usersList.toString();
-  }
-
-  */
+*/
 
 	/**
 	 * This method is for test purposes only and will be removed later.
 	 */
-  /*
-  @Deprecated
-  @GetMapping("/online_users")
-  public String getOnlineUsers() {
-      StringBuilder onlineUsersList = new StringBuilder();
-      for (String username : userConnectionMonitor.getOnlineUsers()) {
-          onlineUsersList.append(username).append("\n");
-      }
-      return onlineUsersList.toString();
-  }
 
-  @Deprecated
-  public ArrayList<User> getUsersList() {
-      return new ArrayList<>(users.values());
-  }
 
-  @Deprecated
-  public ArrayList<String> getOnlineUsersList() {
-      return userConnectionMonitor.getOnlineUsers();
-  }
-  */
+	@Deprecated
+	@GetMapping("/users")
+	public String getUsers() {
+		StringBuilder usersList = new StringBuilder();
+		for (User user : users.values()) {
+			usersList.append(user.toString()).append("\n");
+		}
+		return usersList.toString();
+	}
+
+
+	/**
+	 * This method is for test purposes only and will be removed later.
+	 */
+
+	@Deprecated
+	@GetMapping("/online_users")
+	public String getOnlineUsers() {
+		StringBuilder onlineUsersList = new StringBuilder();
+		userConnectionMonitor.getUsers().forEach(username -> {
+			onlineUsersList.append(username).append("\n");
+		});
+		return onlineUsersList.toString();
+	}
+
+	@Deprecated
+	@GetMapping("/all_users")
+	public ArrayList<User> getUsersList() {
+		return new ArrayList<>(users.values());
+	}
+/*
+
+
+	@Deprecated
+	public ArrayList<String> getOnlineUsersList() {
+		return userConnectionMonitor.getOnlineUsers();
+	}
+
+ */
+
 	private boolean checkIfOnline(String username) {
 		return userConnectionMonitor.isUserConnected(username);
 	}
