@@ -102,7 +102,7 @@ public class CentralServerController {
 
 	@PostMapping("/register")
 	public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-		if (users.values().stream().anyMatch(user -> user.getUsername().equals(request.name()))) {
+		if (DatabaseHandler.get(request.name()) != null) {
 			logger.info("Registration failed: User already exists - " + request.name());
 			return ResponseEntity.status(HttpStatus.CONFLICT)
 					.body(new RegisterResponse(false, "User already exists", null));
@@ -114,6 +114,7 @@ public class CentralServerController {
 		ZTNetworkMember ztNetworkMember = new ZTNetworkMember(networkId, request.zerotierAddress());
 		ztService.createNetworkMember(ztNetworkMember);
 		userToZT.put(newUser.getUsername(), ztNetworkMember);
+		DatabaseHandler.save(newUser);
 		logger.info("User registered successfully: " + request.name() + " " + password + "\n");
 		return ResponseEntity.ok(new RegisterResponse(true, "User registered successfully", password));
 	}
@@ -133,6 +134,7 @@ public class CentralServerController {
 		ZTNetworkMember ztNetworkMember = userToZT.get(request.name());
 		ztNetworkMember.getConfig().setAuthorized(true);
 		ztService.updateNetworkMember(ztNetworkMember);
+		DatabaseHandler.update(user);
 		logger.info("User authenticated successfully: " + request.name() + " " + newPassword + "\n");
 		return ResponseEntity.ok(new AuthResponse(true, "User authenticated", newPassword));
 
@@ -302,7 +304,7 @@ public class CentralServerController {
 	}
 
 	private boolean checkCredentials(String username, String password) {
-		User user = users.get(username);
+		User user = DatabaseHandler.get(username);
 		return user != null
 				&& user.isCorrectPassword(hashPassword(password));
 	}
