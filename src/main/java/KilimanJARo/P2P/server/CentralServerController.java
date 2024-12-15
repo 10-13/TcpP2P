@@ -2,8 +2,7 @@ package KilimanJARo.P2P.server;
 
 import KilimanJARo.P2P.client.SmartProperties;
 import KilimanJARo.P2P.client.tunneling.Tunnel;
-import KilimanJARo.P2P.server.database.DatabaseHandler;
-import KilimanJARo.P2P.server.database.HibernateUtil;
+import KilimanJARo.P2P.server.database.UserRepository;
 import KilimanJARo.P2P.server.monitors.UserConnectionMonitor;
 import KilimanJARo.P2P.networking.requests.AuthRequest;
 import KilimanJARo.P2P.networking.requests.RegisterRequest;
@@ -50,7 +49,11 @@ public class CentralServerController {
 	private ZTService ztService;
 
 	@Autowired
+	private UserRepository databaseHandler;
+
+	@Autowired
 	public CentralServerController(
+			UserRepository userRepository,
 			@Qualifier("CentralServerRestTemplate") RestTemplate restTemplate,
 			@Qualifier("publicProperties") PropertiesFactoryBean publicProperties,
 			@Qualifier("centralServerProperties") PropertiesFactoryBean serverProperties)
@@ -59,13 +62,19 @@ public class CentralServerController {
 			FileHandler fileHandler = new FileHandler("central_server.log", true);
 			fileHandler.setFormatter(new SimpleFormatter());
 			logger.addHandler(fileHandler);
-			HibernateUtil.initializeSessionFactory();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		this.databaseHandler = userRepository;
 		this.restTemplate = restTemplate;
 		this.properties =
 				new SmartProperties(publicProperties.getObject(), serverProperties.getObject());
+
+		List<User> userList = databaseHandler.getAll();
+		for (User user : userList) {
+			users.put(user.getUsername(), user);
+		}
+
 		networkId = properties.getProperty("network_id");
 		token = System.getenv("ZEROTIER_TOKEN");
 		getZeroTierAddress();
@@ -102,7 +111,7 @@ public class CentralServerController {
 
 	@PostMapping("/register")
 	public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-		if (DatabaseHandler.get(request.name()) != null) {
+		if (users.containsKey(request.name())) {
 			logger.info("Registration failed: User already exists - " + request.name());
 			return ResponseEntity.status(HttpStatus.CONFLICT)
 					.body(new RegisterResponse(false, "User already exists", null));
@@ -111,10 +120,7 @@ public class CentralServerController {
 		String passwordHash = hashPassword(password);
 		User newUser = new User(request.name(), passwordHash);
 		users.put(newUser.getUsername(), newUser);
-		ZTNetworkMember ztNetworkMember = new ZTNetworkMember(networkId, request.zerotierAddress());
-		ztService.createNetworkMember(ztNetworkMember);
-		userToZT.put(newUser.getUsername(), ztNetworkMember);
-		DatabaseHandler.save(newUser);
+		databaseHandler.save(newUser);
 		logger.info("User registered successfully: " + request.name() + " " + password + "\n");
 		return ResponseEntity.ok(new RegisterResponse(true, "User registered successfully", password));
 	}
@@ -127,14 +133,21 @@ public class CentralServerController {
 			logger.info("Authentication failed: Invalid credentials - " + request.name());
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(false, "Authentication failed", null));
 		}
+
 		String newPassword = generateRandomPassword();
-		user.setPass(hashPassword(newPassword));
+		user.setPasswordHash(hashPassword(newPassword));
 		user.setCurrentPort(request.port());
+		user.setZerotierAddress(request.zerotierAddress());
+
 		userConnectionMonitor.userConnected(request.name());
-		ZTNetworkMember ztNetworkMember = userToZT.get(request.name());
+
+		ZTNetworkMember ztNetworkMember = new ZTNetworkMember(networkId, request.zerotierAddress());
 		ztNetworkMember.getConfig().setAuthorized(true);
-		ztService.updateNetworkMember(ztNetworkMember);
-		DatabaseHandler.update(user);
+		ztService.createNetworkMember(ztNetworkMember);
+		userToZT.put(user.getUsername(), ztNetworkMember);
+
+		databaseHandler.update(user);
+
 		logger.info("User authenticated successfully: " + request.name() + " " + newPassword + "\n");
 		return ResponseEntity.ok(new AuthResponse(true, "User authenticated", newPassword));
 
@@ -147,10 +160,12 @@ public class CentralServerController {
 			logger.info("Logout failed: User not found - " + username);
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new LogoutResponse(false, "User not found"));
 		}
+
 		userConnectionMonitor.userDisconnected(username);
 		ZTNetworkMember ztNetworkMember = userToZT.get(username);
 		ztNetworkMember.getConfig().setAuthorized(false);
 		ztService.updateNetworkMember(ztNetworkMember);
+
 		logger.info("User logged out successfully: " + username + "\n");
 		return ResponseEntity.ok(new LogoutResponse(true, "Logged out successfully"));
 	}
@@ -261,7 +276,7 @@ public class CentralServerController {
     @Deprecated
     @GetMapping("/users")
     public String getUsers() {
-        List<User> usersList = DatabaseHandler.getAll();
+        List<User> usersList = databaseHandler.getAll();
         StringBuilder usersString = new StringBuilder();
         for (User user : usersList) {
             usersString.append(user.toString()).append("\n");
@@ -304,7 +319,7 @@ public class CentralServerController {
 	}
 
 	private boolean checkCredentials(String username, String password) {
-		User user = DatabaseHandler.get(username);
+		User user = users.get(username);
 		return user != null
 				&& user.isCorrectPassword(hashPassword(password));
 	}

@@ -74,7 +74,7 @@ public class ClientServerController {
     @GetMapping("/registerWithCentralServer")
     public ResponseEntity<RegisterResponse> registerWithCentralServer(@RequestParam RegisterRequest request) {
         username = request.name();
-        RegisterRequest requestToCentral = new RegisterRequest(username, zerotierAddress);
+        RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -96,7 +96,7 @@ public class ClientServerController {
     public ResponseEntity<RegisterResponse> registerWithCentralServerAuto() {
         username = "Server";
 
-        RegisterRequest requestToCentral = new RegisterRequest(username, zerotierAddress);
+        RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -135,7 +135,7 @@ public class ClientServerController {
         if (!usernameIn.equals(username)) {
             return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
         }
-        AuthRequest requestToCentral = new AuthRequest(username, password, -1);
+        AuthRequest requestToCentral = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("server.port")));
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -168,7 +168,7 @@ public class ClientServerController {
             e.printStackTrace();
         }
         System.out.println("Last line: " + lastLine);
-        AuthRequest request = new AuthRequest(username, lastLine, -1);
+        AuthRequest request = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("server.port")));
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
