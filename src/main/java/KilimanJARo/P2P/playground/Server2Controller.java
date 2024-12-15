@@ -1,11 +1,9 @@
+/*
 package KilimanJARo.P2P.playground;
 
-import KilimanJARo.P2P.server.requests.AuthRequest;
-import KilimanJARo.P2P.server.requests.LogoutRequest;
-import KilimanJARo.P2P.server.requests.RegisterRequest;
-import KilimanJARo.P2P.server.responses.AuthResponse;
-import KilimanJARo.P2P.server.responses.LogoutResponse;
-import KilimanJARo.P2P.server.responses.RegisterResponse;
+import KilimanJARo.P2P.networking.requests.AuthRequest;
+import KilimanJARo.P2P.networking.requests.RegisterRequest;
+import KilimanJARo.P2P.networking.responses.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
@@ -124,4 +122,4 @@ public class Server2Controller {
             return ResponseEntity.status(500).body(new LogoutResponse(false, "Logout failed"));
         }
     }
-}
+}*/

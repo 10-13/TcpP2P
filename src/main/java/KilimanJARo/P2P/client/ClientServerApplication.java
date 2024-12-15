@@ -6,7 +6,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,15 +16,15 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 @SpringBootApplication
-@EnableScheduling
 public class ClientServerApplication {
 
     public static void main(String[] args) {
+        String[] defArgs = {"--spring.config.name=client_server_private"};
         if (args != null) {
-            String[] allArgs = Stream.concat(Arrays.stream(args), Stream.of("--spring.config.name=client_server")).toArray(String[]::new);
+            String[] allArgs = Stream.concat(Arrays.stream(args), Arrays.stream(defArgs)).toArray(String[]::new);
             SpringApplication.run(ClientServerApplication.class, allArgs);
         } else {
-            SpringApplication.run(ClientServerApplication.class, "--spring.config.name=client_server");
+            SpringApplication.run(ClientServerApplication.class, defArgs);
         }
 
     }
@@ -37,13 +36,13 @@ public class ClientServerApplication {
         return new RestTemplate();
     }
 
-    @Value("${central_server_properties}")
-    private String centralServerPropertiesPath;
+    @Value("${public_properties}")
+    private String publicPropertiesPath;
 
-    @Bean(name = "centralServerProperties")
+    @Bean(name = "publicProperties")
     public PropertiesFactoryBean centralServerProperties() {
         PropertiesFactoryBean bean = new PropertiesFactoryBean();
-        bean.setLocation(new ClassPathResource(centralServerPropertiesPath));
+        bean.setLocation(new ClassPathResource(publicPropertiesPath + ".properties"));
         return bean;
     }
 
@@ -51,7 +50,7 @@ public class ClientServerApplication {
     private String serverPropertiesPath;
 
 
-    @Bean(name = "serverProperties")
+    @Bean(name = "clientServerProperties")
     public PropertiesFactoryBean serverProperties() {
         PropertiesFactoryBean bean = new PropertiesFactoryBean();
         bean.setLocation(new ClassPathResource(serverPropertiesPath + ".properties"));

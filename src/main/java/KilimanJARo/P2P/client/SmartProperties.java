@@ -3,21 +3,39 @@ package KilimanJARo.P2P.client;
 import java.util.Properties;
 
 public class SmartProperties {
-    private final Properties properties;
+    private final Properties publicProperties;
+    private final Properties privateProperties;
 
-    public SmartProperties(Properties properties) {
-        this.properties = properties;
+    public SmartProperties(Properties publicProperties, Properties privateProperties) {
+        this.publicProperties = publicProperties;
+        this.privateProperties = privateProperties;
     }
 
     public String getProperty(String key) {
-        String value = properties.getProperty(key);
+        if (key.startsWith("private.")) {
+            return getPropertyFromPrivate(key.substring(8));
+        } else {
+            return getPropertyFromPublic(key);
+        }
+    }
+
+    private String getPropertyFromPublic(String key) {
+        String value = publicProperties.getProperty(key);
         if (value != null) {
-            value = resolvePlaceholders(value);
+            value = resolvePlaceholders(value, publicProperties);
         }
         return value;
     }
 
-    private String resolvePlaceholders(String value) {
+    private String getPropertyFromPrivate(String key) {
+        String value = privateProperties.getProperty(key);
+        if (value != null) {
+            value = resolvePlaceholders(value, privateProperties);
+        }
+        return value;
+    }
+
+    private String resolvePlaceholders(String value, Properties properties) {
         while (value.contains("${")) {
             int startIndex = value.indexOf("${");
             int endIndex = value.indexOf("}", startIndex);
