@@ -135,7 +135,7 @@ public class ClientServerController {
         if (!usernameIn.equals(username)) {
             return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
         }
-        AuthRequest requestToCentral = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("server.port")));
+        AuthRequest requestToCentral = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("private.server.port")));
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -168,7 +168,8 @@ public class ClientServerController {
             e.printStackTrace();
         }
         System.out.println("Last line: " + lastLine);
-        AuthRequest request = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("server.port")));
+        password = lastLine;
+        AuthRequest request = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("private.server.port")));
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
