@@ -20,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 public class ClientServerController {
-    private static final String AUTO_USERNAME = "ServerTimur4";
+    private static final String AUTO_USERNAME = "ServerVova4";
     private final RestTemplate restTemplate;
     private final SmartProperties properties;
     private String username = "";

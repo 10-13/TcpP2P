@@ -23,12 +23,12 @@ public class ExampleClient {
         System.setProperty("java.awt.headless", "false");
         ConfigurableApplicationContext clientContext = SpringApplication.run(ClientServerApplication.class, "--spring.config.name=client_server_private");
         ClientServerController clientController = clientContext.getBean(ClientServerController.class);
-        clientController.registerWithCentralServerAuto();
+        //clientController.registerWithCentralServerAuto();
         clientController.authWithCentralServerAuto();
         Front f = new Front(clientController);
         f.Show();
-        clientController.logoutFromCentralServerAuto();
-        clientContext.close();
+        //clientController.logoutFromCentralServerAuto();
+        //clientContext.close();
     }
 }
 

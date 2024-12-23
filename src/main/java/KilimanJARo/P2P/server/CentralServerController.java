@@ -34,7 +34,7 @@ import static java.util.Collections.reverse;
 @RequestMapping("/api")
 @CrossOrigin
 public class CentralServerController {
-	private static final int NUMBER_OF_THIRD_PARTY_CANDIDATES = 1;
+	private static final int NUMBER_OF_THIRD_PARTY_CANDIDATES = 0;
 	private static final int LENGTH_OF_TUNNEL_ID = 10;
 	private final BidirectionalMap<String, TunnelKey> tunnels = new BidirectionalMap<>(); // id to TunnelKey
 	private final Map<String, List<String>> personToTunnel = new HashMap<>(); // name to List<id>
