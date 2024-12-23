@@ -3,6 +3,8 @@ package KilimanJARo.P2P.client;
 import KilimanJARo.P2P.client.tunneling.Tunnel;
 import KilimanJARo.P2P.networking.requests.*;
 import KilimanJARo.P2P.networking.responses.*;
+import KilimanJARo.P2P.utils.RandomStringGenerator;
+import KilimanJARo.P2P.utils.SmartProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
@@ -12,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
 import java.net.URI;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,8 +31,8 @@ public class ClientServerController {
     @Deprecated
     private String password;
 
-    private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
-    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
+    // TODO: здесь надо хранить TunnelKey: Tunnel
+    private final Map<String, Tunnel> tunnels = new HashMap<>();
 
     @Autowired
     public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("publicProperties") PropertiesFactoryBean publicProperties, @Qualifier("clientServerProperties") PropertiesFactoryBean serverProperties) throws IOException {
@@ -257,7 +258,6 @@ public class ClientServerController {
         String from = request.from();
         String to = request.to();
         String tunnel_id = request.tunnelId();
-        boolean readable = false;
         if (from == null && to == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
         }
@@ -266,21 +266,19 @@ public class ClientServerController {
             if (from == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
             }
-            readable = true;
         }
         if (to == null) {
             to = properties.getProperty("front.port");
             if (to == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
             }
-            readable = true;
         }
         Tunnel tunnel = Tunnel.Create(from, to, tunnel_id);
         if (tunnel == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
         }
 
-        publicIDToLocalTunnels.put(tunnel_id, tunnel);
+        tunnels.put(tunnel_id, tunnel);
         return ResponseEntity.ok(new CreateTunnelResponse(true));
     }
 
@@ -288,8 +286,8 @@ public class ClientServerController {
     public ResponseEntity<CloseTunnelResponse> closeTube(@RequestParam CloseTunnelRequest request) {
         try {
             String tunnel_id = request.tunnelId();
-            publicIDToLocalTunnels.get(tunnel_id).close();
-            publicIDToLocalTunnels.remove(tunnel_id);
+            tunnels.get(tunnel_id).close();
+            tunnels.remove(tunnel_id);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CloseTunnelResponse(false, e.getMessage()));
         }
@@ -364,21 +362,7 @@ public class ClientServerController {
         String local_id;
         do {
             local_id = RandomStringGenerator.generateRandomString(10);
-        } while (localToPublicIDTubeMap.containsKey(local_id));
+        } while (tunnels.containsKey(local_id));
         return local_id;
-    }
-
-    private static class RandomStringGenerator {
-        private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        private static final SecureRandom RANDOM = new SecureRandom();
-
-        public static String generateRandomString(int length) {
-            StringBuilder sb = new StringBuilder(length);
-            for (int i = 0; i < length; i++) {
-                int index = RANDOM.nextInt(CHARACTERS.length());
-                sb.append(CHARACTERS.charAt(index));
-            }
-            return sb.toString();
-        }
     }
 }
