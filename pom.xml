@@ -113,9 +113,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<mainClass>KilimanJARo.P2P.server.CentralServerApplication</mainClass>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
