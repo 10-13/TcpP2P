@@ -1,9 +1,11 @@
+# собираем проект. не забываем главный класс указать в pom.xml
 FROM maven:3.9.9-eclipse-temurin-23-alpine AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package
 
+# доп зависимость
 FROM zerotier/zerotier:latest AS zerotier
 
 
@@ -14,6 +16,7 @@ COPY --from=zerotier /usr/sbin/zerotier-one /usr/bin/zerotier-one
 RUN chmod +x /usr/bin/zerotier-cli
 RUN chmod +x /usr/bin/zerotier-one
 
+# много дополнительно, просто на всякий
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -59,7 +62,6 @@ ENV DATABASE_USERNAME=${DATABASE_USERNAME}
 
 ARG DATABASE_PASSWORD
 ENV DATABASE_PASSWORD=${DATABASE_PASSWORD}
-
 
 
 EXPOSE 8080

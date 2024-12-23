@@ -1,5 +1,6 @@
 package KilimanJARo.P2P.client;
 
+import java.util.Map;
 import java.util.Properties;
 
 public class SmartProperties {
@@ -11,31 +12,35 @@ public class SmartProperties {
         this.privateProperties = privateProperties;
     }
 
-    public String getProperty(String key) {
+    public String getProperty(String key, Map<String, String> temp_placeholders) {
         if (key.startsWith("private.")) {
-            return getPropertyFromPrivate(key.substring(8));
+            return getPropertyFromPrivate(key.substring(8), temp_placeholders);
         } else {
-            return getPropertyFromPublic(key);
+            return getPropertyFromPublic(key, temp_placeholders);
         }
     }
 
-    private String getPropertyFromPublic(String key) {
+    public String getProperty(String key) {
+        return getProperty(key, Map.of());
+    }
+
+    private String getPropertyFromPublic(String key, Map<String, String> temp_placeholders) {
         String value = publicProperties.getProperty(key);
         if (value != null) {
-            value = resolvePlaceholders(value, publicProperties);
+            value = resolvePlaceholders(value, publicProperties, temp_placeholders);
         }
         return value;
     }
 
-    private String getPropertyFromPrivate(String key) {
+    private String getPropertyFromPrivate(String key, Map<String, String> temp_placeholders) {
         String value = privateProperties.getProperty(key);
         if (value != null) {
-            value = resolvePlaceholders(value, privateProperties);
+            value = resolvePlaceholders(value, privateProperties, temp_placeholders);
         }
         return value;
     }
 
-    private String resolvePlaceholders(String value, Properties properties) {
+    private String resolvePlaceholders(String value, Properties properties, Map<String, String> temp_placeholders) {
         while (value.contains("${")) {
             int startIndex = value.indexOf("${");
             int endIndex = value.indexOf("}", startIndex);
@@ -43,7 +48,7 @@ public class SmartProperties {
                 throw new IllegalArgumentException("Incorrect placeholder in property " + value);
             }
             String placeholder = value.substring(startIndex + 2, endIndex);
-            String placeholderValue = properties.getProperty(placeholder);
+            String placeholderValue = temp_placeholders.getOrDefault(placeholder, properties.getProperty(placeholder));
             if (placeholderValue != null) {
                 value = value.replace("${" + placeholder + "}", placeholderValue);
             } else {

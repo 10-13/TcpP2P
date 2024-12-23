@@ -31,7 +31,7 @@ public class ClientServerController {
     private String password;
 
     private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
-    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
+    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>(); // TODO: здесь надо хранить TunnelKey: Tunnel
 
     @Autowired
     public ClientServerController(@Qualifier("ClientServerRestTemplate") RestTemplate restTemplate, @Qualifier("publicProperties") PropertiesFactoryBean publicProperties, @Qualifier("clientServerProperties") PropertiesFactoryBean serverProperties) throws IOException {
