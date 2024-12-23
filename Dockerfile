@@ -3,7 +3,7 @@ FROM maven:3.9.9-eclipse-temurin-23-alpine AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN mvn clean package -Dexec.mainClass=KilimanJARo.P2P.server.CentralServerApplication
+RUN mvn clean package -Dspring-boot.repackage.mainClass=KilimanJARo.P2P.server.CentralServerApplication
 
 # доп зависимость
 FROM zerotier/zerotier:latest AS zerotier
