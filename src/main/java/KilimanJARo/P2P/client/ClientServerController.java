@@ -20,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 public class ClientServerController {
+    private static final String AUTO_USERNAME = "ServerTimur4";
     private final RestTemplate restTemplate;
     private final SmartProperties properties;
     private String username = "";
@@ -60,6 +61,7 @@ public class ClientServerController {
             }
 
             process.waitFor();
+            System.out.println("My zerotier address " + zerotierAddress);
 
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -95,7 +97,7 @@ public class ClientServerController {
 
     @Deprecated
     public ResponseEntity<RegisterResponse> registerWithCentralServerAuto() {
-        username = "Server";
+        username = AUTO_USERNAME;
 
         RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
@@ -158,7 +160,7 @@ public class ClientServerController {
 
     @Deprecated
     public ResponseEntity<AuthResponse> authWithCentralServerAuto() {
-        username = "Server";
+        username = AUTO_USERNAME;
         String lastLine = "";
         try (BufferedReader reader = new BufferedReader(new FileReader("client_pass.txt"))) {
             String currentLine;
@@ -233,7 +235,7 @@ public class ClientServerController {
 
     @Deprecated
     public ResponseEntity<LogoutResponse> logoutFromCentralServerAuto() {
-        username = "Server";
+        username = AUTO_USERNAME;
         LogoutRequest requestToCentral = new LogoutRequest(username);
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
