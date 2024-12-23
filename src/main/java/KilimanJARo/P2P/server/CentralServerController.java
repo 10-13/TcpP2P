@@ -83,6 +83,7 @@ public class CentralServerController {
 
 	private void getZeroTierAddress() throws IOException {
 		try {
+			logger.info("Getting ZeroTier address\n");
 			ProcessBuilder processBuilder = new ProcessBuilder("zerotier-cli", "info");
 			Process process = processBuilder.start();
 
@@ -103,10 +104,12 @@ public class CentralServerController {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+		logger.info("ZeroTier address: " + zerotierAddress + "\n");
 	}
 
 	@PostMapping("/register")
 	public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+		logger.info("Registering user: " + request.name() + "\n");
 		if (users.containsKey(request.name())) {
 			logger.info("Registration failed: User already exists - " + request.name());
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(new RegisterResponse(false, "User already exists", null));
@@ -123,6 +126,7 @@ public class CentralServerController {
 
 	@PostMapping("/login")
 	public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
+		logger.info("Authenticating user: " + request.name() + "\n");
 		User user = users.get(request.name());
 		if (!checkCredentials(request.name(), request.password())) {
 			logger.info("Authentication failed: Invalid credentials - " + request.name());
@@ -150,6 +154,7 @@ public class CentralServerController {
 
 	@PostMapping("/logout")
 	public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
+		logger.info("Logging out user: " + request.username() + "\n");
 		String username = request.username();
 		if (!checkIfOnline(username)) {
 			logger.info("Logout failed: User not found - " + username);
@@ -167,6 +172,7 @@ public class CentralServerController {
 
 	@PostMapping("/makeConnection")
 	public ResponseEntity<EstablishConnectionResponse> makeConnection(@RequestBody EstablishConnectionRequest request) {
+		logger.info("Establishing connection: " + request.from() + " -> " + request.to() + "\n");
 		if (!checkIfOnline(request.from())) {
 			logger.info("Connection failed: User not found - " + request.from());
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new EstablishConnectionResponse(false, "User 'from' not found"));
@@ -200,6 +206,7 @@ public class CentralServerController {
 	}
 
 	private ResponseEntity<EstablishConnectionResponse> connectionEstablished(String from, String to) {
+		logger.info(" Started Connection established: " + from + " -> " + to);
 		EstablishConnectionRequest requestToRecipient = new EstablishConnectionRequest(from, to);
 		HttpHeaders headers = new HttpHeaders();
 		// headers.setBasicAuth("username", "password");
@@ -219,6 +226,7 @@ public class CentralServerController {
 	}
 
 	private boolean build(String from, String to) {
+		logger.info("Building tunnel: " + from + " -> " + to);
 		Stream<String> thirdPartyCandidates = userConnectionMonitor.getRandomizedSet(NUMBER_OF_THIRD_PARTY_CANDIDATES);
 		boolean success = true;
 		personToTunnel.put(from, new ArrayList<>());
@@ -251,11 +259,14 @@ public class CentralServerController {
 		}
 		if (success) {
 			reverse(personToTunnel.get(to));
+			logger.info("Tunnel built: " + from + " -> " + to);
 		}
+		logger.info("Failed to build tunnel: " + from + " -> " + to);
 		return success;
 	}
 
 	private List<Object> makeTube(String from, String to, String thirdParty) {
+		logger.info("Making tube: " + from + " -> " + thirdParty + " -> " + to);
 		CreateTunnelRequest requestToRecipient = new CreateTunnelRequest(from, thirdParty, to);
 		HttpHeaders headers = new HttpHeaders();
 		// headers.setBasicAuth("username", "password");
@@ -277,7 +288,8 @@ public class CentralServerController {
 	}
 
 	private void closeTube(String from, String to, String thirdParty) {
-		CloseTunnelRequest requestToRecipient = new CloseTunnelRequest();
+		logger.info("Closing tube: " + from + " -> " + thirdParty + " -> " + to);
+		CloseTunnelRequest requestToRecipient = new CloseTunnelRequest(tunnels.getByValue(new TunnelKey(from, thirdParty, to)));
 		HttpHeaders headers = new HttpHeaders();
 		// headers.setBasicAuth("username", "password");
 		// headers.set("Content-Type", "application/json");
@@ -295,6 +307,7 @@ public class CentralServerController {
 	}
 
 	public List<String[]> buildTriplets(String from, String to, Stream<String> thirdParty) {
+		logger.info("Building triplets: " + from + " -> " + to);
 		List<String[]> triplets = new ArrayList<>();
 		String previous = from;
 
@@ -304,6 +317,7 @@ public class CentralServerController {
 		}
 
 		triplets.add(new String[]{previous, to, null});
+		logger.info("Built triplets: " + from + " -> " + to);
 		return triplets;
 	}
 
@@ -370,6 +384,7 @@ public class CentralServerController {
 	}
 
 	private String getCentralClientConnection(String username) {
+		logger.info("Getting central client connection for user: " + username + "\n");
 		ZTNetworkMember member = ztService.getNetworkMember(networkId, userToZT.get(username).getNodeId());
 		if (member == null || member.getConfig() == null || member.getConfig().getAddress() == null) {
 			throw new RuntimeException("Failed to get ZeroTier member information for user: " + username);
@@ -380,6 +395,7 @@ public class CentralServerController {
 			throw new RuntimeException("User not found: " + username);
 		}
 		int port = user.getCurrentPort();
+		logger.info("Central client connection for user: " + username + " - " + localIp + ":" + port + "\n");
 		return localIp + ":" + port;
 	}
 }
