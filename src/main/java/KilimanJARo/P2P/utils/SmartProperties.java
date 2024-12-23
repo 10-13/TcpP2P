@@ -1,4 +1,4 @@
-package KilimanJARo.P2P.client;
+package KilimanJARo.P2P.utils;
 
 import java.util.Map;
 import java.util.Properties;

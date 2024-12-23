@@ -3,8 +3,8 @@ package KilimanJARo.P2P.client;
 import KilimanJARo.P2P.client.tunneling.Tunnel;
 import KilimanJARo.P2P.networking.requests.*;
 import KilimanJARo.P2P.networking.responses.*;
-import KilimanJARo.P2P.server.BidirectionalMap;
-import KilimanJARo.P2P.server.RandomStringGenerator;
+import KilimanJARo.P2P.utils.RandomStringGenerator;
+import KilimanJARo.P2P.utils.SmartProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
@@ -14,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
 import java.net.URI;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 

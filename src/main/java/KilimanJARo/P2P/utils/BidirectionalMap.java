@@ -1,4 +1,4 @@
-package KilimanJARo.P2P.server;
+package KilimanJARo.P2P.utils;
 
 import java.util.HashMap;
 import java.util.Map;

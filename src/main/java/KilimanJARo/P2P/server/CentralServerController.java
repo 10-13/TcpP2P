@@ -1,7 +1,8 @@
 package KilimanJARo.P2P.server;
 
-import KilimanJARo.P2P.client.SmartProperties;
-import KilimanJARo.P2P.client.tunneling.Tunnel;
+import KilimanJARo.P2P.utils.BidirectionalMap;
+import KilimanJARo.P2P.utils.RandomStringGenerator;
+import KilimanJARo.P2P.utils.SmartProperties;
 import KilimanJARo.P2P.networking.requests.*;
 import KilimanJARo.P2P.networking.responses.*;
 import KilimanJARo.P2P.server.database.UserRepository;
@@ -25,7 +26,6 @@ import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.reverse;
