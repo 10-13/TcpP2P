@@ -66,11 +66,7 @@
 			<artifactId>zerotier-api-java</artifactId>
 			<version>0.6.2</version>
 		</dependency>
-		<!-- Hibernate ORM-->
-		<dependency>
-			<groupId>org.hibernate.orm</groupId>
-			<artifactId>hibernate-core</artifactId>
-		</dependency>
+
 
 		<!-- JUnit 5 for unit tests -->
 		<dependency>
