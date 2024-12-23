@@ -262,13 +262,13 @@ public class ClientServerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
         }
         if (from == null) {
-            from = properties.getProperty("front.port");
+            from = properties.getProperty("front.port.tcp");
             if (from == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
             }
         }
         if (to == null) {
-            to = properties.getProperty("front.port");
+            to = properties.getProperty("front.port.tcp");
             if (to == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new CreateTunnelResponse(false));
             }
