@@ -266,11 +266,7 @@ public class CentralServerController {
 		ResponseEntity<CreateTunnelResponse> response = restTemplate.exchange(requestEntity, CreateTunnelResponse.class);
 
 		if (response.getBody() != null && response.getBody().isSuccess()) {
-			String id = new Random().ints(48, 122)
-					.filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
-					.mapToObj(i -> String.valueOf((char) i))
-					.limit(LENGTH_OF_TUNNEL_ID)
-					.collect(Collectors.joining());
+			String id = RandomStringGenerator.generateRandomString(LENGTH_OF_TUNNEL_ID);
 			tunnels.put(id, new TunnelKey(from, thirdParty, to));
 			logger.info("Created tunnel: " + from + " -> " + thirdParty + " -> " + to);
 			return Arrays.asList(true, id);

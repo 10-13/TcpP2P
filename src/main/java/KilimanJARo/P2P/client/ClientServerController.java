@@ -4,6 +4,7 @@ import KilimanJARo.P2P.client.tunneling.Tunnel;
 import KilimanJARo.P2P.networking.requests.*;
 import KilimanJARo.P2P.networking.responses.*;
 import KilimanJARo.P2P.server.BidirectionalMap;
+import KilimanJARo.P2P.server.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
@@ -364,19 +365,5 @@ public class ClientServerController {
             local_id = RandomStringGenerator.generateRandomString(10);
         } while (tunnels.containsKey(local_id));
         return local_id;
-    }
-
-    private static class RandomStringGenerator {
-        private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        private static final SecureRandom RANDOM = new SecureRandom();
-
-        public static String generateRandomString(int length) {
-            StringBuilder sb = new StringBuilder(length);
-            for (int i = 0; i < length; i++) {
-                int index = RANDOM.nextInt(CHARACTERS.length());
-                sb.append(CHARACTERS.charAt(index));
-            }
-            return sb.toString();
-        }
     }
 }
