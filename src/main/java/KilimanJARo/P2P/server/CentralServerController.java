@@ -79,6 +79,7 @@ public class CentralServerController {
 		ztService.createNetworkMember(ztNetworkMember);
 		ztNetworkMember.getConfig().setAuthorized(true);
 		ztService.updateNetworkMember(ztNetworkMember);
+
 	}
 
 	private void getZeroTierAddress() throws IOException {
