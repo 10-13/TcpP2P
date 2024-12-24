@@ -173,7 +173,7 @@ public class CentralServerController {
 	@PostMapping("/makeConnection")
 	public ResponseEntity<EstablishConnectionResponse> makeConnection(@RequestBody EstablishConnectionRequest request) {
 		logger.info("Establishing connection: " + request.from() + " -> " + request.to() + "\n");
-		/*if (!checkIfOnline(request.from())) {
+		if (!checkIfOnline(request.from())) {
 			logger.info("Connection failed: User not found - " + request.from());
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new EstablishConnectionResponse(false, "User 'from' not found"));
 		}
@@ -181,7 +181,7 @@ public class CentralServerController {
 		if (!checkIfOnline(request.to())) {
 			logger.info("Connection failed: User not found - " + request.to());
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new EstablishConnectionResponse(false, "User 'to' not found"));
-		}*/
+		}
 
 		EstablishConnectionRequest requestToRecipient = new EstablishConnectionRequest(request.from(), request.to());
 		HttpHeaders headers = new HttpHeaders();
