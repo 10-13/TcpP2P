@@ -32,7 +32,6 @@ public class ClientServerController {
 	@Deprecated
 	private String password;
 
-	// TODO: здесь надо хранить TunnelKey: Tunnel
 	private final Map<String, Tunnel> tunnels = new HashMap<>();
 
 	@Autowired
@@ -40,6 +39,7 @@ public class ClientServerController {
 		this.restTemplate = restTemplate;
 		this.properties = new SmartProperties(publicProperties.getObject(), serverProperties.getObject());
 		getZeroTierAddress();
+		new ProcessBuilder("zerotier-cli", "set", properties.getProperty("network_id"), "allowManaged=1").start();
 	}
 
 	private void getZeroTierAddress() throws IOException {

@@ -79,6 +79,7 @@ public class CentralServerController {
 		ztService.createNetworkMember(ztNetworkMember);
 		ztNetworkMember.getConfig().setAuthorized(true);
 		ztService.updateNetworkMember(ztNetworkMember);
+		new ProcessBuilder("zerotier-cli", "set", networkId, "allowManaged=1").start();
 
 	}
 
