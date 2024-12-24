@@ -43,7 +43,7 @@ public class ClientServerController {
     }
 
     private void getZeroTierAddress() throws IOException {
-        try {
+        try { 
             ProcessBuilder processBuilder = new ProcessBuilder("zerotier-cli", "info");
             Process process = processBuilder.start();
 
@@ -74,8 +74,8 @@ public class ClientServerController {
      * Sends a request to central server.
      * Returns a response to front.
      */
-    @GetMapping("/registerWithCentralServer")
-    public ResponseEntity<RegisterResponse> registerWithCentralServer(@RequestParam RegisterRequest request) {
+    @PostMapping("/registerWithCentralServer")
+    public ResponseEntity<RegisterResponse> registerWithCentralServer(@RequestBody RegisterRequest request) {
         username = request.name();
         RegisterRequest requestToCentral = new RegisterRequest(username);
         HttpHeaders headers = new HttpHeaders();
@@ -86,9 +86,8 @@ public class ClientServerController {
             .headers(headers)
             .body(requestToCentral);
         ResponseEntity<RegisterResponse> response = restTemplate.exchange(requestEntity, RegisterResponse.class);
-        password = response.getBody().password();
 
-        if (response.getBody() != null && response.getBody().isSuccess()) {
+        if (!response.getStatusCode().isError() && response.getBody() != null && response.getBody().isSuccess()) {
             return ResponseEntity.ok(new RegisterResponse(true, "Server registered successfully", response.getBody().password()));
         } else {
             return ResponseEntity.status(500).body(new RegisterResponse(false, "Server registration failed", null));
@@ -132,13 +131,9 @@ public class ClientServerController {
     /*
      * Authenticates client server with central server. Gets a request from front. Send response to front.
      */
-    @GetMapping("/authWithCentralServer")
-    public ResponseEntity<AuthResponse> authWithCentralServer(@RequestParam AuthRequest request) {
-        String usernameIn = request.name();
-        if (!usernameIn.equals(username)) {
-            return ResponseEntity.status(403).body(new AuthResponse(false, "Server authentication failed", null));
-        }
-        AuthRequest requestToCentral = new AuthRequest(username, password, zerotierAddress, Integer.parseInt(properties.getProperty("private.server.port")));
+    @PostMapping("/authWithCentralServer")
+    public ResponseEntity<AuthResponse> authWithCentralServer(@RequestBody AuthRequest request) {
+        AuthRequest requestToCentral = new AuthRequest(request.name(), request.password(), zerotierAddress, Integer.parseInt(properties.getProperty("private.server.port")));
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -208,13 +203,9 @@ public class ClientServerController {
     /*
         * Logs out client server from central server. Gets a request from front. Sends a request to central server. Returns a response to front.
      */
-    @GetMapping("/logoutFromCentralServer")
-    public ResponseEntity<LogoutResponse> logoutFromCentralServer(@RequestParam LogoutRequest request) {
-        String usernameIn = request.username();
-        if (!usernameIn.equals(username)) {
-            return ResponseEntity.status(403).body(new LogoutResponse(false, "Logout failed due to invalid credentials"));
-        }
-        LogoutRequest requestToCentral = new LogoutRequest(username);
+    @PostMapping("/logoutFromCentralServer")
+    public ResponseEntity<LogoutResponse> logoutFromCentralServer(@RequestBody LogoutRequest request) {
+        LogoutRequest requestToCentral = new LogoutRequest(request.username());
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
         // headers.set("Content-Type", "application/json");
@@ -256,7 +247,7 @@ public class ClientServerController {
     }
 
     @PostMapping("/makeTube")
-    public ResponseEntity<CreateTunnelResponse> makeTube(@RequestParam CreateTunnelRequest request) {
+    public ResponseEntity<CreateTunnelResponse> makeTube(@RequestBody CreateTunnelRequest request) {
         String from = request.from();
         String to = request.to();
         String tunnel_id = request.tunnelId();
@@ -285,7 +276,7 @@ public class ClientServerController {
     }
 
     @PostMapping("/closeTube")
-    public ResponseEntity<CloseTunnelResponse> closeTube(@RequestParam CloseTunnelRequest request) {
+    public ResponseEntity<CloseTunnelResponse> closeTube(@RequestBody CloseTunnelRequest request) {
         try {
             String tunnel_id = request.tunnelId();
             tunnels.get(tunnel_id).close();
@@ -297,7 +288,7 @@ public class ClientServerController {
     }
 
     @PostMapping("/requestConnectionIn")
-    public ResponseEntity<EstablishConnectionResponse> requestConnectionIn(@RequestParam EstablishConnectionRequest request) {
+    public ResponseEntity<EstablishConnectionResponse> requestConnectionIn(@RequestBody EstablishConnectionRequest request) {
         ResponseEntity<EstablishConnectionResponse> response = restTemplate.postForEntity(properties.getProperty("front.api.handleConnectionRequest.url"), request, EstablishConnectionResponse.class);
 
         if (response.getBody() != null && response.getBody().isAllowed()) {
@@ -315,7 +306,7 @@ public class ClientServerController {
     }
 
     @PostMapping("/requestConnectionOut")
-    public ResponseEntity<EstablishConnectionResponse> requestConnectionOut(@RequestParam EstablishConnectionRequest request) {
+    public ResponseEntity<EstablishConnectionResponse> requestConnectionOut(@RequestBody EstablishConnectionRequest request) {
         EstablishConnectionRequest requestToCentral = new EstablishConnectionRequest(username, request.to());
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth("username", "password");
@@ -332,7 +323,7 @@ public class ClientServerController {
     }
 
     @PostMapping("/requestCloseTube")
-    public ResponseEntity<CloseConnectionResponse> requestCloseTube(@RequestParam CloseConnectionRequest request) {
+    public ResponseEntity<CloseConnectionResponse> requestCloseTube(@RequestBody CloseConnectionRequest request) {
         String usernameIn = request.username();
         CloseConnectionRequest requestToCentral = new CloseConnectionRequest(usernameIn);
         HttpHeaders headers = new HttpHeaders();
