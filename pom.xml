@@ -119,6 +119,7 @@
 						<artifactId>spring-boot-maven-plugin</artifactId>
 						<configuration>
 							<mainClass>KilimanJARo.P2P.server.CentralServerApplication</mainClass>
+							<finalName>central_server</finalName>
 						</configuration>
 					</plugin>
 				</plugins>
@@ -129,7 +130,6 @@
 			<id>client_server</id>
 			<build>
 				<plugins>
-
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-compiler-plugin</artifactId>
@@ -144,6 +144,7 @@
 						<artifactId>spring-boot-maven-plugin</artifactId>
 						<configuration>
 							<mainClass>KilimanJARo.P2P.client.ClientServerApplication</mainClass>
+							<finalName>client_server</finalName>
 						</configuration>
 					</plugin>
 				</plugins>
@@ -154,7 +155,6 @@
 			<id>front</id>
 			<build>
 				<plugins>
-
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-compiler-plugin</artifactId>
@@ -169,6 +169,7 @@
 						<artifactId>spring-boot-maven-plugin</artifactId>
 						<configuration>
 							<mainClass>KilimanJARo.P2P.ClientServerConsoleApp</mainClass>
+							<finalName>front</finalName>
 						</configuration>
 					</plugin>
 				</plugins>

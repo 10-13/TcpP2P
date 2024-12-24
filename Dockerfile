@@ -45,7 +45,7 @@ RUN apt-get update
 RUN apt-get install -y libapr1 libapr1-dev libapache2-mod-jk
 RUN apt-get install -y libtcnative-1
 
-COPY --from=build /app/target/P2P-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY --from=build /app/target/central_server.jar /app/app.jar
 
 WORKDIR /app
 
