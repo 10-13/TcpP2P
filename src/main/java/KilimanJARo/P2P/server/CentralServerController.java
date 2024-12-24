@@ -188,7 +188,7 @@ public class CentralServerController {
 		// headers.setBasicAuth("username", "password");
 		// headers.set("Content-Type", "application/json");
 
-		RequestEntity<EstablishConnectionRequest> requestEntity = RequestEntity.post(URI.create(properties.getProperty("client.api.requestConnectionIn.url", Map.of("client.url", getCentralClientConnection(request.to()))))).headers(headers).body(requestToRecipient);
+		RequestEntity<EstablishConnectionRequest> requestEntity = RequestEntity.post(URI.create(properties.getProperty("client_server.api.connectionIn.url", Map.of("client.url", getCentralClientConnection(request.to()))))).headers(headers).body(requestToRecipient);
 
 		ResponseEntity<EstablishConnectionResponse> response = restTemplate.exchange(requestEntity, EstablishConnectionResponse.class);
 
