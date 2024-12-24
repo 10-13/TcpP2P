@@ -1,0 +1,6 @@
+zerotier:
+  token: ${ZEROTIER_TOKEN}
+
+spring:
+  main:
+    headless: false

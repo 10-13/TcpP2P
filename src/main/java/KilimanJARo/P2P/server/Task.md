@@ -19,19 +19,21 @@
     - !!! Возможно будет трансформирован в ответ на запрос
   - Запрос на закрытие тонеля RequestCloseTube(local_id, tunnel_id) [Закрываем тонель на всех пользователях связанных с ним. Может быть вызван только авторизированным пользователем]
     - NO RESPONSE
-  - Запрос на авторизацию Auth(name, password) [Авторизируем пользователя и возвращаем ему новый пароль. Запоминаем пользователя для дальнейшего прокидывания туннелей]
-    - Ответ содержит следующий пароль (next_password)
-  - Запрос на отключение пользователя Exit() [Исключаем пользователя из множества узлов для туннелирования]
-    - NO RESPONSE
+  - Запрос на регистрацию register() [Регистрируем пользователя и возвращаем ему пароль]
+    - Ответ (is_success, message, password)
+  - Запрос на авторизацию login(name, password) [Авторизируем пользователя и возвращаем ему новый пароль. Запоминаем пользователя для дальнейшего прокидывания туннелей]
+    - Ответ (is_success, message, next_password)
+  - Запрос на отключение пользователя logout() [Исключаем пользователя из множества узлов для туннелирования]
+    - Ответ (is_success, message)
 
 
 ## Примиры работы "на пальцах"
 
 ### Общая последовательность установки/разрыва соединения
 ```
-[Client->Server]: Auth(name, password) -> (next_password)
+[Client->Server]: login(name, password) -> (next_password)
 ...
-[Client->Server]: Exit()
+[Client->Server]: logout()
 [Server]: Rebuilding all related tunnels (locally)
 [Server]: Fetching tunnels reinitialization
 ```
@@ -49,13 +51,15 @@
        [Client->FrontS] (noden): RequestConnection(request_user, tunnel_id) -> (is_allowed, reason, tunnel_id)
 In case of allowed connection:
 [Server]: Building tunnel structure
-[Server->Client]: MakeTube(null, node1, tunnel_id) -> (is_completed)
-[Server->Client] (node1): MakeTube(node0, node2, tunnel_id) -> (is_completed)
-[Server->Client] (node2): MakeTube(node1, node3, tunnel_id) -> (is_completed)
+[Server->Client]: MakeTube(null, node1, tunnel_id) -> (is_completed, port)
+[Server->Client] (node1): MakeTube(node0, node2, tunnel_id) -> (is_completed, port)
+[Server->Client] (node2): MakeTube(node1, node3, tunnel_id) -> (is_completed, port)
 Same for each node of tunnel.
-[Server->Client] (noden): MakeTube(noden-1, null, tunnel_id) -> (is_completed)
+[Server->Client] (noden): MakeTube(noden-1, null, tunnel_id) -> (is_completed, null)
 [Server->Client]: EstablishConnection(tunnel_id, local_id, endpoint_user)
 [Client->FrontS]: EstablishConnection(local_id, local_port)
 [Server->Client] (noden): EstablishConnection(tunnel_id, local_id, begpoint_user)
 [Client->FrontS] (noden): EstablishConnection(local_id, local_port)
 ```
+
+- Важно обратить внимание на то, что вызовы MakeTube имеют строгий порядок, чтобы гарантировать существование открытого порта на предыдущем узле.

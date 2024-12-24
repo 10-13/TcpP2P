@@ -1,26 +1,17 @@
-// src/main/java/KilimanJARo/P2P/monitors/UserConnectionMonitor.java
 package KilimanJARo.P2P.server.monitors;
 
-import KilimanJARo.P2P.user.User;
-
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.stream.Stream;
 
-/*
- * This class is responsible for monitoring the connection of the users.
- * It will help to determine the best third-part member of the tunnel to run the connection through.
- */
 public class UserConnectionMonitor {
-    private final Map<String, Instant> userConnections = new ConcurrentHashMap<>();
-    private final ArrayList<String> onlineUsers = new ArrayList<>();
-    private int userCount = 0;
-    private int onlineUserCount = 0;
+    private record UserEntry(String name, Instant time) {}
+
+    private final SortedSet<UserEntry> entrySet = new TreeSet<>(Comparator.comparing(a->a.time));
+    private final HashMap<String, UserEntry> mappedEntry = new HashMap<>();
+    private final Random rand = new Random();
+
     private static UserConnectionMonitor instance;
-
-    public UserConnectionMonitor() {}
-
     public static synchronized UserConnectionMonitor getInstance() {
         if (instance == null) {
             instance = new UserConnectionMonitor();
@@ -28,54 +19,47 @@ public class UserConnectionMonitor {
         return instance;
     }
 
-    public void userConnected(String username) {
-        onlineUserCount++;
-        userConnections.put(username, Instant.now());
-        onlineUsers.add(username);
+    public synchronized void userConnected(String username) {
+        var entry = new UserEntry(username, Instant.now());
+        entrySet.add(entry);
+        mappedEntry.put(username, entry);
+    }
+    public synchronized void userDisconnected(String username) {
+        entrySet.remove(mappedEntry.get(username));
+        mappedEntry.remove(username);
+    }
+    public synchronized void clearUsers() {
+        entrySet.clear();
+        mappedEntry.clear();
     }
 
-    public void userDisconnected(String username) {
-        onlineUserCount--;
-        onlineUsers.remove(username);
-    }
-
-    public ArrayList<String> getOnlineUsers() {
-        return onlineUsers;
-    }
-
-    public Instant getLastOnlineTime(String username) {
-        return userConnections.get(username);
-    }
-
-    public Map<String, Instant> getAllUserConnections() {
-        return userConnections;
-    }
-
-    public boolean isUserConnected(String username) {
-        return userConnections.containsKey(username);
-    }
-
-    public boolean isUserActive(String username) {
-        Instant lastOnlineTime = userConnections.get(username);
-        if (lastOnlineTime == null) {
-            return false;
-        }
-        return Instant.now().getEpochSecond() - lastOnlineTime.getEpochSecond() <= 48 * 60 * 60;
-    }
-
-    public void clearInactiveUsers() {
-        userConnections.entrySet().removeIf(entry -> Instant.now().getEpochSecond() - entry.getValue().getEpochSecond() > 48 * 60 * 60);
-    }
-
-    public void clearAllUsers() {
-        userConnections.clear();
+    public synchronized boolean isUserConnected(String username) {
+        return mappedEntry.containsKey(username);
     }
 
     public int getUserCount() {
-        return userCount;
+        return entrySet.size();
     }
 
-    public int getOnlineUserCount() {
-        return onlineUserCount;
+    public Stream<String> getUsers() {
+        return entrySet.stream().map(a->a.name);
+    }
+    public Stream<String> getRandomizedSet(int count) {
+        class RandomizeNext {
+            int randomized = 0;
+            int position = -1;
+            int pos = 0;
+
+            public boolean filter(UserEntry userEntry) {
+                if (pos++ == position) {
+                    position += rand.nextInt(position + 1, getUserCount() - count + randomized++);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        final RandomizeNext rndGen = new RandomizeNext();
+        return entrySet.stream().filter(rndGen::filter).map(a->a.name);
     }
 }

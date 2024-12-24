@@ -1,95 +1,77 @@
 package KilimanJARo.P2P.client;
 
-import KilimanJARo.P2P.client.response.CreateTunnelResponse;
-import KilimanJARo.P2P.client.response.EstablishConnectionResponse;
-import KilimanJARo.P2P.client.tunneling.Tunnel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.boot.SpringApplication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
-@RestController
-@RequestMapping("/api")
+@SpringBootApplication(exclude = {
+        DataSourceAutoConfiguration.class,
+        DataSourceTransactionManagerAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class
+})
 public class ClientServerApplication {
-    private final Map<String, String> localToPublicIDTubeMap = new HashMap<>();
-    private final Map<String, Tunnel> publicIDToLocalTunnels = new HashMap<>();
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    public final int FrontPort = 8080;
 
     public static void main(String[] args) {
-        SpringApplication.run(ClientServerApplication.class, args);
-    }
-
-    @PostMapping("/makeTube")
-    public CreateTunnelResponse makeTube(@RequestParam(required = false) String from,
-                             @RequestParam(required = false) String to,
-                             @RequestParam String tunnel_id) {
-        var tunnel = Tunnel.Create(from, to);
-        if (tunnel == null)
-            return new CreateTunnelResponse(false);
-
-        publicIDToLocalTunnels.put(tunnel_id, tunnel);
-        return new CreateTunnelResponse(true);
-    }
-
-    @PostMapping("/closeTube")
-    public void closeTube(@RequestParam String tunnel_id) {
-        publicIDToLocalTunnels.get(tunnel_id).Close();
-    }
-
-    @PostMapping("/requestConnection")
-    public EstablishConnectionResponse requestConnection(@RequestParam String request_user,
-                                                         @RequestParam String tunnel_id) {
-        String url = "http://localhost:" + FrontPort + "/requestConnection?" +
-                "request_user=" + request_user +
-                "&tunnel_id=" + tunnel_id;
-
-        EstablishConnectionResponse response = restTemplate.postForObject(url, null, EstablishConnectionResponse.class);
-        if (response != null)
-            return response;
-
-        return new EstablishConnectionResponse(false, "failure", tunnel_id);
-    }
-
-    @PostMapping("/establishConnection")
-    public void establishConnection(@RequestParam String tunnel_id,
-                                    @RequestParam String local_id,
-                                    @RequestParam String endpoint_user) {
-        String url = "http://localhost:" + FrontPort + "/requestConnection?" +
-                "request_user=" + endpoint_user +
-                "&tunnel_id=" + tunnel_id +
-                "&local_id=" + local_id +
-                "&port=" + publicIDToLocalTunnels.get(tunnel_id).Port();
-
-        restTemplate.postForObject(url, null, Void.class);
-    }
-
-    @PostMapping("/requestTube")
-    public EstablishConnectionResponse requestTube(@RequestParam String endpoint_name,
-                                @RequestParam String local_id) {
-        String url = "http://server/api/requestTube?endpoint_name=" + endpoint_name + "&local_id=" + local_id;
-        EstablishConnectionResponse response = restTemplate.postForObject(url, null, EstablishConnectionResponse.class);
-
-        if (response == null)
-            return new EstablishConnectionResponse(false, "failure", local_id);
-
-        if (response.isAllowed()) {
-            localToPublicIDTubeMap.put(local_id, response.tunnelId());
+        String[] defArgs = {"--spring.config.name=client_server_private"};
+        if (args != null) {
+            String[] allArgs = Stream.concat(Arrays.stream(args), Arrays.stream(defArgs)).toArray(String[]::new);
+            SpringApplication.run(ClientServerApplication.class, allArgs);
+        } else {
+            SpringApplication.run(ClientServerApplication.class, defArgs);
         }
 
-        return new EstablishConnectionResponse(response.isAllowed(), response.reason(), local_id);
     }
 
-    @PostMapping("/requestCloseTube")
-    public void requestCloseTube(@RequestParam String local_id) {
-        String tunnel_id = localToPublicIDTubeMap.get(local_id);
-        if (tunnel_id != null) {
-            String url = "http://server/api/requestCloseTube?local_id=" + local_id + "&tunnel_id=" + tunnel_id;
-            restTemplate.postForObject(url, null, Void.class);
-            localToPublicIDTubeMap.remove(local_id);
-        }
+
+
+    @Bean(name="ClientServerRestTemplate")
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Value("${public_properties}")
+    private String publicPropertiesPath;
+
+    @Bean(name = "publicProperties")
+    public PropertiesFactoryBean centralServerProperties() {
+        PropertiesFactoryBean bean = new PropertiesFactoryBean();
+        bean.setLocation(new ClassPathResource(publicPropertiesPath + ".properties"));
+        return bean;
+    }
+
+    @Value("${spring.config.name}")
+    private String serverPropertiesPath;
+
+
+    @Bean(name = "clientServerProperties")
+    public PropertiesFactoryBean serverProperties() {
+        PropertiesFactoryBean bean = new PropertiesFactoryBean();
+        bean.setLocation(new ClassPathResource(serverPropertiesPath + ".properties"));
+        return bean;
+    }
+
+    @Bean(name="clientSecurityChain")
+    public SecurityFilterChain securityFilterChainMain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authz -> authz
+                        .anyRequest().permitAll()
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(Customizer.withDefaults());
+        return http.build();
     }
 }
