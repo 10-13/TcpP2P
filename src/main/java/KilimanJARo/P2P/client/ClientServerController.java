@@ -307,7 +307,7 @@ public class ClientServerController {
 
 	@PostMapping("/requestConnectionOut")
 	public ResponseEntity<EstablishConnectionResponse> requestConnectionOut(@RequestBody EstablishConnectionRequest request) {
-		EstablishConnectionRequest requestToCentral = new EstablishConnectionRequest(username, request.to());
+		EstablishConnectionRequest requestToCentral = new EstablishConnectionRequest(request.from(), request.to());
 		HttpHeaders headers = new HttpHeaders();
 		// headers.setBasicAuth("username", "password");
 		// headers.set("Content-Type", "application/json");

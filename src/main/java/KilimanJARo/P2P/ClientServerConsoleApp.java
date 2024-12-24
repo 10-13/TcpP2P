@@ -9,6 +9,7 @@ import KilimanJARo.P2P.networking.responses.EstablishConnectionResponse;
 import KilimanJARo.P2P.networking.responses.LogoutResponse;
 import KilimanJARo.P2P.networking.responses.RegisterResponse;
 import KilimanJARo.P2P.utils.SmartProperties;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -17,22 +18,26 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
 
 public class ClientServerConsoleApp {
+	private static final BlockingQueue<String> inputQueue = new LinkedBlockingQueue<>();
 	private static final Logger logger = LoggerFactory.getLogger(ClientServerConsoleApp.class);
-
+	private static final Object LOCK = new Object();
+	private static volatile boolean isHttpRequestProcessing = false;
 	private static SmartProperties properties;
 	private static final RestTemplate restTemplate = new RestTemplate();
 	private static final Scanner scanner = new Scanner(System.in);
@@ -40,6 +45,120 @@ public class ClientServerConsoleApp {
 	private static int tcpPort;
 	private static ServerSocket tcpServer;
 	private static ExecutorService executorService;
+	private static HttpServer httpServer;
+
+	private static class ConsoleReader implements Runnable {
+		@Override
+		public void run() {
+			while (!Thread.currentThread().isInterrupted()) {
+				try {
+					String input = scanner.nextLine();
+					inputQueue.put(input);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+		}
+	}
+
+	private static String getUserInput() throws InterruptedException {
+		String input = inputQueue.poll(5, TimeUnit.MINUTES);
+		if (input == null) {
+			throw new InterruptedException("Input timeout");
+		}
+		return input;
+	}
+
+	private static void startHttpServer() {
+		try {
+			httpPort = Integer.parseInt(properties.getProperty("front.port.http"));
+			httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
+
+			httpServer.createContext("/api/handleConnectionRequest", new ConnectionHandler());
+
+			ExecutorService executor = Executors.newFixedThreadPool(10);
+			httpServer.setExecutor(executor);
+
+			httpServer.start();
+			logger.info("HTTP Server started on port {}", httpPort);
+		} catch (IOException e) {
+			logger.error("Failed to start HTTP server", e);
+		}
+	}
+
+	private static class ConnectionHandler extends JsonHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			synchronized (LOCK) {
+				isHttpRequestProcessing = true;
+			}
+			if ("POST".equals(exchange.getRequestMethod())) {
+				try {
+					String requestBody = readRequestBody(exchange);
+					EstablishConnectionRequest request = parseJson(requestBody, EstablishConnectionRequest.class);
+
+					EstablishConnectionResponse response;
+					while (true) {
+						System.out.println("\nUser " + request.from() + " wants to connect with you. Accept? y/n \n");
+						String ans = inputQueue.take();
+
+						if (ans.equals("n")) {
+							response = new EstablishConnectionResponse(false, "Don't want to");
+						} else if (ans.equals("y")) {
+							response = new EstablishConnectionResponse(true, "Yeah, you're cool");
+						} else {
+							continue;
+						}
+						break;
+					}
+
+					String jsonResponse = convertToJson(response);
+					sendJsonResponse(exchange, 200, jsonResponse);
+				} catch (Exception e) {
+					sendJsonResponse(exchange, 400, "{\"error\": \"Invalid request\"}");
+				}
+			} else {
+				exchange.sendResponseHeaders(405, -1);
+			}
+			synchronized (LOCK) {
+				isHttpRequestProcessing = false;
+				LOCK.notify();
+			}
+		}
+	}
+
+	private abstract static class JsonHandler implements HttpHandler {
+		protected void sendJsonResponse(HttpExchange exchange, int statusCode, String jsonResponse) throws IOException {
+			exchange.getResponseHeaders().set("Content-Type", "application/json");
+			byte[] responseBytes = jsonResponse.getBytes();
+			exchange.sendResponseHeaders(statusCode, responseBytes.length);
+
+			try (OutputStream os = exchange.getResponseBody()) {
+				os.write(responseBytes);
+			}
+		}
+
+		protected String readRequestBody(HttpExchange exchange) throws IOException {
+			return new String(exchange.getRequestBody().readAllBytes());
+		}
+	}
+
+	private static <T> T parseJson(String json, Class<T> clazz) {
+		return new Gson().fromJson(json, clazz);
+	}
+
+	private static String convertToJson(Object obj) {
+		return new Gson().toJson(obj);
+	}
+
+
+	private static void stopHttpServer() {
+		if (httpServer != null) {
+			httpServer.stop(0);
+			logger.info("HTTP Server stopped");
+		}
+	}
 
 	static {
 		try {
@@ -64,33 +183,62 @@ public class ClientServerConsoleApp {
 	public static void main(String[] args) {
 		logger.info("Starting ClientServerConsoleApp");
 		startTcpServer();
+		startHttpServer();
+		Thread consoleReaderThread = new Thread(new ConsoleReader());
+		consoleReaderThread.setDaemon(true);
+		consoleReaderThread.start();
 
 		while (true) {
+			synchronized (LOCK) {
+				while (isHttpRequestProcessing) {
+					try {
+						LOCK.wait();
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+				}
+			}
 			displayMenu();
-			int choice = scanner.nextInt();
-			scanner.nextLine();
 
-			switch (choice) {
-				case 1:
-					registerWithCentralServer();
-					break;
-				case 2:
-					authenticateWithCentralServer();
-					break;
-				case 3:
-					logoutFromCentralServer();
-					break;
-				case 4:
-					logger.info("Exiting application");
-					stopTcpServer();
-					System.out.println("Exiting...");
-					break;
-				case 5:
-					makeConnectionOut();
-					return;
-				default:
-					logger.warn("Invalid menu choice: {}", choice);
-					System.out.println("Invalid choice. Try again.");
+			try {
+				String input = inputQueue.poll(5, TimeUnit.SECONDS);
+
+				int choice;
+				try {
+					choice = Integer.parseInt(input);
+				} catch (NumberFormatException e) {
+					System.out.println("Invalid input. Please enter a number.");
+					continue;
+				}
+
+				switch (choice) {
+					case 1:
+						registerWithCentralServer();
+						break;
+					case 2:
+						authenticateWithCentralServer();
+						break;
+					case 3:
+						logoutFromCentralServer();
+						break;
+					case 4:
+						logger.info("Exiting application");
+						stopTcpServer();
+						stopHttpServer();
+						System.out.println("Exiting...");
+						System.exit(0);
+						return;
+					case 5:
+						makeConnectionOut();
+						break;
+					default:
+						logger.warn("Invalid menu choice: {}", choice);
+						System.out.println("Invalid choice. Try again.");
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 	}
@@ -100,24 +248,24 @@ public class ClientServerConsoleApp {
 			logger.info("Starting making connection out process");
 
 			System.out.print("Enter server name: ");
-			String name = scanner.nextLine();
+			String name = getUserInput();
 			logger.debug("My name request for server: {}", name);
 
 			System.out.print("Enter target server name: ");
-			String nameTo = scanner.nextLine();
+			String nameTo = getUserInput();
 			logger.debug("Target name request for server: {}", nameTo);
 
 			EstablishConnectionRequest estRequest = new EstablishConnectionRequest(name, nameTo);
 
 			ResponseEntity<EstablishConnectionResponse> response = restTemplate.postForEntity(
-					properties.getProperty("client_server.api.requestConnectionOut.url"),
+					properties.getProperty("client_server.api.connectionOut.url"),
 					estRequest,
 					EstablishConnectionResponse.class
 			);
 
 			logger.info("MakeConnectionOut response received: {}", response.getBody());
 		} catch (Exception e) {
-			logger.error("Error during server registration", e);
+			logger.info("Error during connection out " + e.getMessage());
 		}
 	}
 
@@ -204,7 +352,7 @@ public class ClientServerConsoleApp {
 			logger.info("Starting server registration process");
 
 			System.out.print("Enter server name: ");
-			String name = scanner.nextLine();
+			String name = getUserInput();
 			logger.debug("Registration request for server: {}", name);
 
 			RegisterRequest regRequest = new RegisterRequest(name);
@@ -226,9 +374,9 @@ public class ClientServerConsoleApp {
 			logger.info("Starting server authentication process");
 
 			System.out.print("Enter server name: ");
-			String name = scanner.nextLine();
+			String name = getUserInput();
 			System.out.print("Enter server password: ");
-			String password = scanner.nextLine();
+			String password = getUserInput();
 
 			logger.debug("Authentication request for server: {}", name);
 
@@ -243,6 +391,7 @@ public class ClientServerConsoleApp {
 			logger.info("Authentication response received: {}", response.getBody());
 		} catch (Exception e) {
 			logger.error("Error during server authentication", e);
+			return;
 		}
 	}
 
@@ -251,7 +400,7 @@ public class ClientServerConsoleApp {
 			logger.info("Starting server logout process");
 
 			System.out.print("Enter server name: ");
-			String name = scanner.nextLine();
+			String name = getUserInput();
 
 			logger.debug("Logout request for server: {}", name);
 
@@ -266,6 +415,7 @@ public class ClientServerConsoleApp {
 			logger.info("Logout response received: {}", response.getBody());
 		} catch (Exception e) {
 			logger.error("Error during server logout", e);
+			return;
 		}
 	}
 

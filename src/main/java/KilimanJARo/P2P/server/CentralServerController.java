@@ -173,7 +173,7 @@ public class CentralServerController {
 	@PostMapping("/makeConnection")
 	public ResponseEntity<EstablishConnectionResponse> makeConnection(@RequestBody EstablishConnectionRequest request) {
 		logger.info("Establishing connection: " + request.from() + " -> " + request.to() + "\n");
-		if (!checkIfOnline(request.from())) {
+		/*if (!checkIfOnline(request.from())) {
 			logger.info("Connection failed: User not found - " + request.from());
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new EstablishConnectionResponse(false, "User 'from' not found"));
 		}
@@ -181,14 +181,14 @@ public class CentralServerController {
 		if (!checkIfOnline(request.to())) {
 			logger.info("Connection failed: User not found - " + request.to());
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new EstablishConnectionResponse(false, "User 'to' not found"));
-		}
+		}*/
 
 		EstablishConnectionRequest requestToRecipient = new EstablishConnectionRequest(request.from(), request.to());
 		HttpHeaders headers = new HttpHeaders();
 		// headers.setBasicAuth("username", "password");
 		// headers.set("Content-Type", "application/json");
 
-		RequestEntity<EstablishConnectionRequest> requestEntity = RequestEntity.post(URI.create(properties.getProperty("client_server.api.connectionIn.url", Map.of("client.url", getCentralClientConnection(request.to()))))).headers(headers).body(requestToRecipient);
+		RequestEntity<EstablishConnectionRequest> requestEntity = RequestEntity.post(URI.create("http://" + properties.getProperty("client_server.api.connectionIn.url", Map.of("client_server.url", getCentralClientConnection(request.to()))))).headers(headers).body(requestToRecipient);
 
 		ResponseEntity<EstablishConnectionResponse> response = restTemplate.exchange(requestEntity, EstablishConnectionResponse.class);
 
@@ -389,7 +389,8 @@ public class CentralServerController {
 		if (member == null || member.getConfig() == null || member.getConfig().getAddress() == null) {
 			throw new RuntimeException("Failed to get ZeroTier member information for user: " + username);
 		}
-		String localIp = member.getConfig().getAddress();
+
+		String localIp = getMemberIpAssignments(networkId, userToZT.get(username).getNodeId());
 		User user = users.get(username);
 		if (user == null) {
 			throw new RuntimeException("User not found: " + username);
@@ -397,5 +398,26 @@ public class CentralServerController {
 		int port = user.getCurrentPort();
 		logger.info("Central client connection for user: " + username + " - " + localIp + ":" + port + "\n");
 		return localIp + ":" + port;
+	}
+
+	private String getMemberIpAssignments(String networkId, String memberId) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + token);
+
+		RequestEntity<Void> requestEntity = RequestEntity
+				.get(URI.create(String.format("%s/network/%s/member/%s",
+						"https://api.zerotier.com/api/v1", networkId, memberId)))
+				.headers(headers)
+				.build();
+
+			ResponseEntity<Map> response = restTemplate.exchange(
+					requestEntity,
+					Map.class
+			);
+
+			Map<String, Object> responseBody = response.getBody();
+			return responseBody != null
+					? (String) ((List<String>) ((Map<String, Object>) responseBody.get("config")).get("ipAssignments")).get(0)
+					: "";
 	}
 }
